@@ -7,7 +7,6 @@
 const els = {
   geminiKey: document.getElementById('gemini-key'),
   deepseekKey: document.getElementById('deepseek-key'),
-  deepseekKey: document.getElementById('deepseek-key'),
   systemInstruction: document.getElementById('system-instruction'),
   contextStrategy: document.getElementById('context-strategy'),
   saveBtn: document.getElementById('save-btn'),
@@ -16,16 +15,31 @@ const els = {
   btnVault: document.getElementById('btn-cloud-vault'),
   vaultSetup: document.getElementById('vault-setup'),
   vaultPassword: document.getElementById('vault-password'),
-  storageHint: document.getElementById('storage-hint')
+  storageHint: document.getElementById('storage-hint'),
+  // Prompts
+  promptSummarize: document.getElementById('prompt-summarize'),
+  promptExplain: document.getElementById('prompt-explain'),
+  promptImprove: document.getElementById('prompt-improve'),
+  promptAnalyze: document.getElementById('prompt-analyze'),
+  resetPromptsBtn: document.getElementById('reset-prompts-btn')
 };
 
 let currentMode = 'local'; // 'local' or 'vault'
+
+// Defaults
+const DEFAULT_PROMPTS = {
+    "summarize": "Summarize this: {{selection}}",
+    "explain": "Explain this in simple terms: {{selection}}",
+    "improve": "Improve writing/grammar: {{selection}}",
+    "analyze": "Please summarize this page.\n\nContext:\n{{content}}\n\nURL: {{url}}"
+};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', restoreOptions);
 els.saveBtn.addEventListener('click', saveOptions);
 els.btnLocal.addEventListener('click', () => setMode('local'));
 els.btnVault.addEventListener('click', () => setMode('vault'));
+els.resetPromptsBtn.addEventListener('click', resetPrompts);
 
 function setMode(mode) {
   currentMode = mode;
@@ -48,7 +62,7 @@ function setMode(mode) {
  */
 function restoreOptions() {
   chrome.storage.local.get(
-    ['geminiKey', 'deepseekKey', 'storageMode', 'systemInstruction', 'contextStrategy'],
+    ['geminiKey', 'deepseekKey', 'storageMode', 'systemInstruction', 'contextStrategy', 'prompts'],
     (localData) => {
       // Restore Context Strategy
       if (localData.contextStrategy) {
@@ -61,6 +75,13 @@ function restoreOptions() {
       if (localData.systemInstruction) {
         els.systemInstruction.value = localData.systemInstruction;
       }
+
+      // Restore Prompts
+      const prompts = localData.prompts || {};
+      els.promptSummarize.value = prompts.summarize || DEFAULT_PROMPTS.summarize;
+      els.promptExplain.value = prompts.explain || DEFAULT_PROMPTS.explain;
+      els.promptImprove.value = prompts.improve || DEFAULT_PROMPTS.improve;
+      els.promptAnalyze.value = prompts.analyze || DEFAULT_PROMPTS.analyze;
 
       // Check storage mode
       if (localData.storageMode === 'vault') {
@@ -90,6 +111,14 @@ async function saveOptions() {
   const contextStrategyVal = els.contextStrategy.value;
   const vaultPass = els.vaultPassword.value;
 
+  // Prompts
+  const prompts = {
+      summarize: els.promptSummarize.value,
+      explain: els.promptExplain.value,
+      improve: els.promptImprove.value,
+      analyze: els.promptAnalyze.value
+  };
+
   showStatus("Saving...", "normal");
 
   try {
@@ -97,7 +126,8 @@ async function saveOptions() {
     await chrome.storage.local.set({ 
       systemInstruction: instructionVal,
       contextStrategy: contextStrategyVal,
-      storageMode: currentMode
+      storageMode: currentMode,
+      prompts: prompts
     });
 
     if (currentMode === 'local') {
@@ -113,9 +143,6 @@ async function saveOptions() {
       if (!vaultPass) {
         throw new Error("Master Password is required for Cloud Vault.");
       }
-      // If fields are empty (user didn't change them but wants to re-encrypt), 
-      // we might have an issue. For now, assume user re-enters keys.
-      // Or check if we have values.
       
       const dataToEncrypt = JSON.stringify({
         geminiKey: geminiVal,
@@ -140,6 +167,14 @@ async function saveOptions() {
     console.error(error);
     showStatus("Error: " + error.message, "error");
   }
+}
+
+function resetPrompts() {
+    els.promptSummarize.value = DEFAULT_PROMPTS.summarize;
+    els.promptExplain.value = DEFAULT_PROMPTS.explain;
+    els.promptImprove.value = DEFAULT_PROMPTS.improve;
+    els.promptAnalyze.value = DEFAULT_PROMPTS.analyze;
+    showStatus("Prompts reset to defaults. Click Save to apply.", "normal");
 }
 
 function showStatus(msg, type) {

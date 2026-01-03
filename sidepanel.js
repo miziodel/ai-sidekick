@@ -7,6 +7,7 @@
 const state = {
   keys: { gemini: null, deepseek: null },
   systemInstruction: "",
+  prompts: {}, // Store loaded prompts
   storageMode: 'local',
   chatHistory: [], // Stores { role: 'user'|'ai', text: string }
   isGenerating: false,
@@ -86,6 +87,15 @@ async function loadSettings() {
   
   state.storageMode = data.storageMode || 'local';
   state.systemInstruction = data.systemInstruction || "";
+
+  // Load Prompts
+  const defaults = {
+      "summarize": "Summarize this: {{selection}}",
+      "explain": "Explain this in simple terms: {{selection}}",
+      "improve": "Improve writing/grammar: {{selection}}",
+      "analyze": "Please summarize this page.\n\nContext:\n{{content}}\n\nURL: {{url}}"
+  };
+  state.prompts = { ...defaults, ...(data.prompts || {}) };
   
   // Load History
   if (data.chatHistory && Array.isArray(data.chatHistory)) {
@@ -349,9 +359,13 @@ async function analyzeCurrentPage(overrideTabId = null) {
       console.log("Skipping text extraction based on strategy/model.");
   }
 
-  // Pass chosen content
-  // Changed "Please analyze" to "Please summarize" per user request
-  const prompt = window.Logic.formatPrompt("Please summarize this page.", finalText, null, finalUrl);
+  // Pass chosen content with dynamic prompt
+  const template = state.prompts.analyze;
+  const prompt = window.Logic.formatPrompt(template, {
+      content: finalText, 
+      url: finalUrl,
+      title: tabTitle
+  });
   
   // Send with clean display text
   handleUserSend(prompt, "Summarize this page");
@@ -600,12 +614,10 @@ function processAction(data) {
   if (data.action === "contextMenu") {
     const { menuItemId, selectionText, pageUrl, tabId } = data;
     
-    let promptPre = "";
-    let isPageAnalysis = false;
-
-    if (menuItemId === "summarize-sel") promptPre = "Summarize this: ";
-    if (menuItemId === "explain-sel") promptPre = "Explain this in simple terms: ";
-    if (menuItemId === "improve-sel") promptPre = "Improve writing/grammar: ";
+    let template = "";
+    if (menuItemId === "summarize-sel") template = state.prompts.summarize;
+    if (menuItemId === "explain-sel") template = state.prompts.explain;
+    if (menuItemId === "improve-sel") template = state.prompts.improve;
     
     if (menuItemId === "summarize-page") {
       // Special Handling for full page
@@ -613,9 +625,12 @@ function processAction(data) {
       return; 
     }
 
-    if (promptPre) {
+    if (template) {
        // Trigger sending
-       const prompt = window.Logic.formatPrompt(promptPre, null, selectionText, pageUrl);
+       const prompt = window.Logic.formatPrompt(template, {
+           selection: selectionText,
+           url: pageUrl
+       });
        handleUserSend(prompt);
     }
   }

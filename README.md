@@ -48,3 +48,22 @@ Run pure logic tests:
 ```bash
 node tests/run_tests.js
 ```
+
+### Configurable Prompts
+You can customize the prompts used for context menu actions and page analysis in the **Options** page (`Right-click extension icon -> Options`).
+
+#### Available Variables
+Use these placeholders to insert dynamic content into your prompts:
+
+| Variable        | Description                                                        | Context             |
+| :-------------- | :----------------------------------------------------------------- | :------------------ |
+| `{{selection}}` | The text currently selected by the user.                           | Select Menu Actions |
+| `{{content}}`   | The full text content of the active page (truncated if necessary). | Analyze Page        |
+| `{{url}}`       | The URL of the active page.                                        | All Actions         |
+| `{{title}}`     | The title of the active page.                                      | All Actions         |
+
+#### Examples
+- **Summarize Selection**: `Summarize this in 3 bullet points: {{selection}}`
+- **Explain Selection**: `Explain this to a 5-year-old: {{selection}}`
+- **Analyze Page**: `Find any deadlines mentioned in this page: {{content}}`
+

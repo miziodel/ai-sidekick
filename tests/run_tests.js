@@ -31,16 +31,28 @@ async function runTests() {
     console.log("   ✅ Passed");
 
     // --- TEST 2: Logic.formatPrompt ---
+    // --- TEST 2: Logic.formatPrompt ---
     console.log("   Test 2: Logic.formatPrompt");
-    const prompt = Logic.formatPrompt("Summarize", "PageContent", "SelectedText", "http://google.com");
-    assert.ok(prompt.includes("Summarize"), "Includes user message");
-    assert.ok(prompt.includes("SelectedText"), "Includes selection");
-    assert.ok(!prompt.includes("PageContent"), "Selection should take precedence over Page Content (or appear distinct)");
     
-    const urlPrompt = Logic.formatPrompt("Analyze", null, null, "http://example.com");
-    assert.ok(urlPrompt.includes("http://example.com"), "Includes URL when content is missing");
-    assert.ok(urlPrompt.includes("PAGE URL"), "Includes PAGE URL header");
+    // Test Substitution
+    const template1 = "Summarize {{selection}} from {{url}}";
+    const ctx1 = { selection: "SelectedText", url: "http://google.com" };
+    const res1 = Logic.formatPrompt(template1, ctx1);
     
+    assert.ok(res1.includes("Summarize SelectedText"), "Substitutes selection");
+    assert.ok(res1.includes("http://google.com"), "Substitutes URL");
+    
+    // Test Truncation
+    const template2 = "Content: {{content}}";
+    const longContent = "a".repeat(200000); // Exceeds default limit
+    const res2 = Logic.formatPrompt(template2, { content: longContent });
+    assert.ok(res2.includes("TRUNCATED"), "Truncates huge content");
+    
+    // Test Fallback/Missing
+    const template3 = "Title: {{title}}";
+    const res3 = Logic.formatPrompt(template3, {}); // Missing title
+    assert.strictEqual(res3, "Title: ", "Handles missing keys gracefully (empty string)");
+
     console.log("   ✅ Passed");
 
     // --- TEST 3: Logic.prepareSystemInstruction ---

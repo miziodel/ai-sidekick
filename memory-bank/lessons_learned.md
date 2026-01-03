@@ -67,3 +67,24 @@ Developing for Arc Browser requires specific considerations compared to standard
 - **Lesson**: Clean UIs often hide functionality.
 - **Fix**: comprehensive **Tooltips** (`title` attributes) are essential for icon-only buttons to ensure users know what "Eye", "Refresh", or "List" icons do before clicking.
 
+## 12. System Page Security Restrictions
+- **Issue**: Extensions cannot run `chrome.scripting.executeScript` or access `document.body` on restricted pages like `chrome://extensions`, `chrome://newtab`, or the Chrome Web Store. This causes runtime errors when "Summarize Page" is triggered.
+- **Pattern**: **Graceful Fallback Strategy**.
+    1. **Pre-check**: If the user's selected strategy (e.g., "URL Only") doesn't require text, skip injection entirely.
+    2. **Try/Catch**: Wrap injection in a try/catch block.
+    3. **Fallback**: If injection fails, catch the error and proceed with **URL Only** analysis, notifying the user ("Security Restriction: using URL only"). This ensures the feature works (partially) rather than crashing.
+
+## 13. Decoupling Chat UI from AI Logic
+- **Issue**: Sending the full page context (thousands of characters) as the "User Message" ruins the chat readability.
+- **Pattern**: **Hidden Context**.
+    - The `addMessage('user', text)` function should accept a `displayOverride`.
+    - Show short, clean intent to the user: "Summarize this page".
+    - Send the massive, prompt-engineered blob to the LLM (and history) in the background.
+
+## 14. Flexible Context Strategy
+- **Issue**: Different models have different strengths (DeepSeek has built-in browsing, Gemini 1.5 has massive context). Forcing one approach (e.g., always extract text) is suboptimal.
+- **Solution**: **Configurable Context Strategy**.
+    - **Auto**: Tailor behavior to model (DeepSeek -> URL, Gemini -> Text).
+    - **URL Only**: Minimal cost, fast.
+    - **Full Text**: Maximum context, higher cost/latency.
+    - Allow the user to override this in Options.

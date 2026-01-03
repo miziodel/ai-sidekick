@@ -216,26 +216,55 @@
       </div>
 
       <div class="card">
-        <div class="section-title">Customization</div>
+        <h2>Settings</h2>
         <div class="form-group">
-          <label>System Instructions</label>
-          <textarea
-            id="system-instruction"
-            rows="3"
-            placeholder="e.g. Always answer in Italian. Be concise."
-          ></textarea>
+            <label for="system-instruction">System Instruction (Persona):</label>
+            <textarea id="system-instruction" rows="3" placeholder="You are a helpful assistant..."></textarea>
+            <div class="hint">Override the default system behavior.</div>
         </div>
-        
+
         <div class="form-group">
-          <label>Context Strategy</label>
-           <select id="context-strategy" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            <option value="auto">Auto (URL for DeepSeek, Text for Gemini)</option>
-            <option value="url-only">URL Only (All Models)</option>
-            <option value="full-text">Full Page Content (All Models)</option>
-          </select>
-          <div class="hint">"Auto" uses URL analysis for DeepSeek (better for web browsing) and Full Text for Gemini.</div>
+            <label for="context-strategy">Page Context Strategy:</label>
+            <select id="context-strategy" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+                <option value="auto">Auto (Text for Gemini, URL for DeepSeek)</option>
+                <option value="full-text">Always Extract Full Text</option>
+                <option value="url-only">Always Use URL Only</option>
+            </select>
+            <div class="hint">"Auto" is recommended. "Full Text" can be token-heavy. "URL Only" relies on the model browsing the live web (if capable).</div>
         </div>
-      </div>
+    </div>
+
+    <div class="card">
+        <details>
+            <summary><h2>Prompt Templates (Advanced)</h2></summary>
+            <div class="hint" style="margin-bottom: 1rem;">
+                Customize what is sent to the AI for each action. Use variables:
+                <code>{{selection}}</code>, <code>{{content}}</code>, <code>{{url}}</code>, <code>{{title}}</code>.
+            </div>
+
+            <div class="form-group">
+                <label for="prompt-summarize">Summarize Selection:</label>
+                <textarea id="prompt-summarize" rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="prompt-explain">Explain Selection:</label>
+                <textarea id="prompt-explain" rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="prompt-improve">Improve Selection:</label>
+                <textarea id="prompt-improve" rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="prompt-analyze">Analyze Page:</label>
+                <textarea id="prompt-analyze" rows="2"></textarea>
+            </div>
+
+            <button id="reset-prompts-btn" class="secondary-btn" style="margin-top: 10px;">Reset to Defaults</button>
+        </details>
+    </div>
 
       <button id="save-btn">Save Settings</button>
       <div id="status"></div>

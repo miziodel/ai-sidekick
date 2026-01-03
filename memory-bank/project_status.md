@@ -24,6 +24,9 @@
 - [x] **Keyboard support**: Enter to send (Shift+Enter for newline).
 - [x] **High-Contrast Alerts**: Visual feedback for system states.
 
+### Configuration
+- [x] **Configurable Prompts**: Custom templates for context menu actions and page analysis using variables (e.g. `{{selection}}`).
+
 ## 🟡 Known Limitations / TODOs
 - **Image Support**: Currently text-only.
 - **Model Parameters**: Temperature/Top-K are hardcoded.
