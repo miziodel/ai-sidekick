@@ -11,14 +11,15 @@
     <h2>🔐 Unlock Your Keys</h2>
     <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Enter your Master Password to access API keys.</p>
     <input type="password" id="vault-password-input" placeholder="Master Password">
-    <button id="vault-unlock-btn">Unlock</button>
+    <button id="vault-unlock-btn" title="Unlock Vault">Unlock</button>
   </div>
 
   <header>
     <div class="model-select-wrapper">
-      <select id="model-select">
-        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
-        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Smarth)</option>
+      <select id="model-select" title="Select AI Model">
+        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Default)</option>
+        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
+        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Powerful)</option>
         <option value="deepseek-chat">DeepSeek V3 (Chat)</option>
         <option value="deepseek-reasoner">DeepSeek R1 (Reasoner)</option>
         <option value="gemini-web">🌐 Gemini Web (Free)</option>
@@ -32,7 +33,12 @@
       <!-- Simple SVG Eye Icon -->
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
     </button>
+    <button id="summarize-btn" class="icon-btn" title="Summarize Context">
+       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+    </button>
   </header>
+  
+  <div id="notification-toast" class="hidden"></div>
 
   <div id="chat-history">
     <!-- Messages will be injected here -->
@@ -46,7 +52,7 @@
   <footer>
     <div class="input-container">
       <textarea id="prompt-input" placeholder="Type a message..."></textarea>
-      <button id="send-btn">Send</button>
+      <button id="send-btn" title="Send Message">Send</button>
     </div>
   </footer>
 

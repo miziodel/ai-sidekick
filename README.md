@@ -2,11 +2,18 @@
 
 AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM chat (Gemini & DeepSeek) and contextual analysis to your browser side panel.
 
-## 🎯 key Features
-- **Multi-Model**: Switch between Gemini 1.5 (Pro/Flash) and DeepSeek (V3/R1 Reasoner).
+> ⚠️ **Note:** This project is currently in a **super draft** phase. Many features are still in the conceptual stage or only partially implemented.
+
+
+## 🎯 Key Features
+- **Multi-Model**: Switch between **Gemini 2.5** (Pro/Flash) and **DeepSeek** (V3/R1 Reasoner).
+- **Conversation Memory**: Maintains chat history across sessions with a "Sliding Window" (keeps last 10 messages) to manage token usage.
 - **Secure Vault**: Client-side encryption (PBKDF2 + AES-GCM) for API keys. No backend required.
 - **Web Mode**: Fallback to `gemini.google.com` (free) if no API key is available.
-- **Contextual Actions**: Right-click to Summarize, Explain, or Analyze entire pages.
+- **Contextual Actions**:
+    - Right-click to Explain, Summarize, or Analyze pages.
+    - **Summarize Button**: One-click summary of the current conversation.
+- **Accessibility**: Tooltips and persistent, high-visibility notifications for status changes.
 - **Streaming**: Real-time text generation.
 
 ## 🛠 Architecture Decisions

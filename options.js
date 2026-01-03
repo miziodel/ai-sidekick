@@ -7,7 +7,9 @@
 const els = {
   geminiKey: document.getElementById('gemini-key'),
   deepseekKey: document.getElementById('deepseek-key'),
+  deepseekKey: document.getElementById('deepseek-key'),
   systemInstruction: document.getElementById('system-instruction'),
+  contextStrategy: document.getElementById('context-strategy'),
   saveBtn: document.getElementById('save-btn'),
   status: document.getElementById('status'),
   btnLocal: document.getElementById('btn-device-storage'),
@@ -46,8 +48,15 @@ function setMode(mode) {
  */
 function restoreOptions() {
   chrome.storage.local.get(
-    ['geminiKey', 'deepseekKey', 'storageMode', 'systemInstruction'],
+    ['geminiKey', 'deepseekKey', 'storageMode', 'systemInstruction', 'contextStrategy'],
     (localData) => {
+      // Restore Context Strategy
+      if (localData.contextStrategy) {
+        els.contextStrategy.value = localData.contextStrategy;
+      } else {
+        els.contextStrategy.value = 'auto'; // Default
+      }
+
       // Restore System Instruction (always local for convenience, not sensitive)
       if (localData.systemInstruction) {
         els.systemInstruction.value = localData.systemInstruction;
@@ -78,6 +87,7 @@ async function saveOptions() {
   const geminiVal = els.geminiKey.value.trim();
   const deepseekVal = els.deepseekKey.value.trim();
   const instructionVal = els.systemInstruction.value.trim();
+  const contextStrategyVal = els.contextStrategy.value;
   const vaultPass = els.vaultPassword.value;
 
   showStatus("Saving...", "normal");
@@ -86,6 +96,7 @@ async function saveOptions() {
     // Save System Instruction (always unencrypted local)
     await chrome.storage.local.set({ 
       systemInstruction: instructionVal,
+      contextStrategy: contextStrategyVal,
       storageMode: currentMode
     });
 

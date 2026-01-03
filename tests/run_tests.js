@@ -36,6 +36,11 @@ async function runTests() {
     assert.ok(prompt.includes("Summarize"), "Includes user message");
     assert.ok(prompt.includes("SelectedText"), "Includes selection");
     assert.ok(!prompt.includes("PageContent"), "Selection should take precedence over Page Content (or appear distinct)");
+    
+    const urlPrompt = Logic.formatPrompt("Analyze", null, null, "http://example.com");
+    assert.ok(urlPrompt.includes("http://example.com"), "Includes URL when content is missing");
+    assert.ok(urlPrompt.includes("PAGE URL"), "Includes PAGE URL header");
+    
     console.log("   ✅ Passed");
 
     // --- TEST 3: Logic.prepareSystemInstruction ---
@@ -109,6 +114,45 @@ async function runTests() {
     // Test Empty
     const empty = await ActionManager.getPendingAction();
     assert.strictEqual(empty, null, "Returns null when empty");
+
+    console.log("   ✅ Passed");
+
+    // --- TEST 6: Logic.pruneHistory ---
+    console.log("   Test 6: Logic.pruneHistory");
+    const history = Array.from({ length: 15 }, (_, i) => ({ role: 'user', text: `msg${i}` })); // msg0..msg14
+    
+    // Test Limit 10
+    const pruned = Logic.pruneHistory(history, 10);
+    assert.strictEqual(pruned.length, 10, "Should contain exactly 10 items");
+    assert.strictEqual(pruned[0].text, "msg5", "Should start from msg5 (0-4 dropped)"); // 15 items, keep last 10 -> start index 5
+    assert.strictEqual(pruned[9].text, "msg14", "Should end at msg14");
+
+    // Test specific case: limit > length
+    const shortHistory = [{ role: 'user', text: 'hi' }];
+    assert.strictEqual(Logic.pruneHistory(shortHistory, 5).length, 1, "Should keep all if length < limit");
+    
+    console.log("   ✅ Passed");
+
+    // --- TEST 7: Logic.formatHistory ---
+    console.log("   Test 7: Logic.formatHistory");
+    const sampleHist = [
+        { role: 'user', text: 'Hello' },
+        { role: 'ai', text: 'Hi present' }
+    ];
+
+    // Gemini
+    const geminiFmt = Logic.formatHistoryForGemini(sampleHist);
+    assert.strictEqual(geminiFmt[0].role, 'user');
+    assert.strictEqual(geminiFmt[0].parts[0].text, 'Hello');
+    assert.strictEqual(geminiFmt[1].role, 'model'); // ai -> model
+    assert.strictEqual(geminiFmt[1].parts[0].text, 'Hi present');
+
+    // DeepSeek
+    const deepseekFmt = Logic.formatHistoryForDeepSeek(sampleHist);
+    assert.strictEqual(deepseekFmt[0].role, 'user');
+    assert.strictEqual(deepseekFmt[0].content, 'Hello');
+    assert.strictEqual(deepseekFmt[1].role, 'assistant'); // ai -> assistant
+    assert.strictEqual(deepseekFmt[1].content, 'Hi present');
 
     console.log("   ✅ Passed");
 

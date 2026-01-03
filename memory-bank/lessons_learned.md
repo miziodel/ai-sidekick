@@ -47,5 +47,23 @@ Developing for Arc Browser requires specific considerations compared to standard
   ```
 
 ## 8. Robust Window Targeting
-- **Issue**: `chrome.contextMenus` clicks (especially global ones) may have an undefined `tab` or `windowId`.
 - **Fix**: Always fallback to `chrome.windows.getLastFocused()` if `tab.windowId` is missing before attempting `chrome.sidePanel.open`.
+
+## 9. Conversation Memory & Token Management
+- **Issue**: Stateless LLM calls forget previous context, but sending full history quickly hits token limits or degrades performance.
+- **Strategy**: **Sliding Window Context**.
+    - Store full history for the user's UI.
+    - Prune context sent to the API to the **last N messages** (e.g., 10).
+    - **Transparency**: When pruning occurs, explicitly notify the user (e.g., "Oldest messages removed from AI memory") so they know why the AI might "forget" early details.
+
+## 10. UI Feedback for Background Actions
+- **Issue**: Transient actions (like pruning memory or copying text) can be missed if notifications are too subtle.
+- **Pattern**: **Persistent Toast with Manual Dismissal**.
+    - For important status changes (like memory loss), standard auto-hiding toasts are insufficient.
+    - Use a high-contrast (e.g., Yellow) persistent banner that requires explicit user interaction (click "×") to dismiss.
+    - This ensures the user acknowledges the system state change.
+
+## 11. Accessibility & Discovery
+- **Lesson**: Clean UIs often hide functionality.
+- **Fix**: comprehensive **Tooltips** (`title` attributes) are essential for icon-only buttons to ensure users know what "Eye", "Refresh", or "List" icons do before clicking.
+
