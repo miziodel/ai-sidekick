@@ -46,12 +46,27 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+importScripts('lib/action-manager.js');
+
 // Helper to open the extension logic
 async function openExtension(tab) {
+  let windowId;
+  
+  // Try to get Window ID from tab, or fallback to last focused window
+  if (tab && tab.windowId) {
+    windowId = tab.windowId;
+  } else {
+    try {
+      const win = await chrome.windows.getLastFocused();
+      if (win) windowId = win.id;
+    } catch (e) { console.warn("Could not get last focused window", e); }
+  }
+
   // 1. Try Side Panel
   try {
+    if (!windowId) throw new Error("No valid window ID found for Side Panel");
     // Attempt to open side panel
-    await chrome.sidePanel.open({ windowId: tab.windowId });
+    await chrome.sidePanel.open({ windowId: windowId });
   } catch (err) {
     console.warn("Side Panel open failed, falling back to Popup:", err);
     // 2. Fallback: Open as a detached popup window
@@ -66,21 +81,18 @@ async function openExtension(tab) {
 
 // Handle Context Menu Clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "open-panel") {
-    openExtension(tab);
-  }
+  // 1. Always save pending action (Unified path)
+  // This ensures 'tab.id' is preserved and timing is consistent.
+  await ActionManager.savePendingAction({
+    action: "contextMenu",
+    menuItemId: info.menuItemId,
+    selectionText: info.selectionText,
+    pageUrl: info.pageUrl,
+    tabId: tab ? tab.id : null
+  });
 
-  // For analysis actions, also ensure panel is open
-  openExtension(tab);
-
-  setTimeout(() => {
-    chrome.runtime.sendMessage({
-      action: "contextMenuData",
-      menuItemId: info.menuItemId,
-      selectionText: info.selectionText,
-      pageUrl: info.pageUrl
-    }).catch(e => console.log("Msg error:", e));
-  }, 500);
+  // 2. Open UI
+  await openExtension(tab);
 });
 
 // Explicitly handle icon click (Disabling automatic setPanelBehavior to ensure fallback works)

@@ -17,6 +17,7 @@ global.window = {};
 // Import libraries
 const Logic = require('../lib/logic.js');
 const CryptoUtils = require('../lib/crypto-utils.js');
+const ActionManager = require('../lib/action-manager.js');
 
 async function runTests() {
     console.log("🧪 Starting Automated Tests...");
@@ -71,6 +72,44 @@ async function runTests() {
         console.error("Crypto Test Failed:", e);
         process.exit(1);
     }
+    console.log("   ✅ Passed");
+
+    // --- TEST 5: ActionManager (Mocked Chrome) ---
+    console.log("   Test 5: ActionManager (Mocking chrome.storage)");
+    
+    // Mock chrome.storage.local
+    let storageMock = {};
+    global.chrome = {
+      storage: {
+        local: {
+          set: async (obj) => { 
+            Object.assign(storageMock, obj); 
+          },
+          get: async (keys) => {
+            const res = {};
+            keys.forEach(k => res[k] = storageMock[k]);
+            return res;
+          },
+          remove: async (key) => {
+            delete storageMock[key];
+          }
+        }
+      }
+    };
+
+    // Test Save
+    await ActionManager.savePendingAction({ type: 'TEST', val: 123 });
+    assert.deepStrictEqual(storageMock.pendingAction, { type: 'TEST', val: 123 }, "Saved to mock storage");
+
+    // Test Get (with clear)
+    const action = await ActionManager.getPendingAction(true);
+    assert.deepStrictEqual(action, { type: 'TEST', val: 123 }, "Retrieved action");
+    assert.strictEqual(storageMock.pendingAction, undefined, "Cleared after read");
+
+    // Test Empty
+    const empty = await ActionManager.getPendingAction();
+    assert.strictEqual(empty, null, "Returns null when empty");
+
     console.log("   ✅ Passed");
 
     console.log("\n🎉 ALL TESTS PASSED!");

@@ -29,3 +29,23 @@ Developing for Arc Browser requires specific considerations compared to standard
 - **Strategy**: It is hard to test `chrome.*` APIs.
 - **Pattern**: Split code into "Pure Logic" (string formatting, crypto math) and "Extension Logic" (listeners, DOM).
 - **Benefit**: Pure logic can be tested in standard Node.js scripts (as we did with `tests/run_tests.js`) without needing a headless browser harness like Puppeteer/Playwright for simple unit tests.
+- **Principle**: **TDD (Test Driven Development)** and **DRY (Don't Repeat Yourself)** are now mandatory project principles.
+
+## 6. Communication between Background and UI
+- **Race Condition**: Sending a message (`chrome.runtime.sendMessage`) immediately after opening a side panel often fails because the panel's script hasn't loaded yet.
+- **Pattern**: **Pending Action Pattern**. 
+    1. Background script saves the intent (action, data) to `chrome.storage.local`.
+    2. Background script opens the panel.
+    3. Panel script checks `chrome.storage.local` on `init()`.
+    4. Pass data via storage, not ephemeral messages, for critical startup actions.
+
+## 7. Service Worker Environment
+- **Gotcha**: `window` is not defined in Manifest V3 background scripts (Service Workers).
+- **Fix**: Library code shared between UI and Background must check for `self` vs `window`:
+  ```javascript
+  (typeof self !== 'undefined' ? self : window).MyClass = MyClass;
+  ```
+
+## 8. Robust Window Targeting
+- **Issue**: `chrome.contextMenus` clicks (especially global ones) may have an undefined `tab` or `windowId`.
+- **Fix**: Always fallback to `chrome.windows.getLastFocused()` if `tab.windowId` is missing before attempting `chrome.sidePanel.open`.

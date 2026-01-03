@@ -49,15 +49,37 @@ async function init() {
     if (e.key === 'Enter') unlockVault();
   });
 
-  // Message Listener (Context Menus)
-  chrome.runtime.onMessage.addListener(handleRuntimeMessage);
+  // Model Selection Persistence
+  els.modelSelect.addEventListener('change', () => {
+    chrome.storage.local.set({ selectedModel: els.modelSelect.value });
+  });
 
   // Focus input
   els.promptInput.focus();
+
+  // --- ACTIONS HANDLER ---
+  
+  // 1. Check startup pending action
+  await checkPendingAction();
+
+  // 2. Listen for new actions (if panel is already open)
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.pendingAction && changes.pendingAction.newValue) {
+      processAction(changes.pendingAction.newValue);
+      // Clear it so we don't process it again on reload? 
+      // Actually ActionManager.getPendingAction clears it. 
+      // But here we read directly from change. We should clear it after processing to keep cleanliness.
+      ActionManager.clearPendingAction();
+    }
+  });
 }
 
 async function loadSettings() {
-  const data = await chrome.storage.local.get(['storageMode', 'systemInstruction', 'geminiKey', 'deepseekKey']);
+  const data = await chrome.storage.local.get(['storageMode', 'systemInstruction', 'geminiKey', 'deepseekKey', 'selectedModel']);
+  
+  if (data.selectedModel) {
+    els.modelSelect.value = data.selectedModel;
+  }
   
   state.storageMode = data.storageMode || 'local';
   state.systemInstruction = data.systemInstruction || "";
@@ -154,29 +176,49 @@ function resetChat() {
   addMessage('ai', "Chat reset. How can I help?");
 }
 
-async function analyzeCurrentPage() {
-  // Get active tab content
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab) return;
+async function analyzeCurrentPage(overrideTabId = null) {
+  // Use passed tabId (from context menu) OR query active tab
+  let tabId = overrideTabId;
   
-  const results = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: () => {
-      // Simple extractor
-      return { 
-        text: document.body.innerText,
-        url: window.location.href,
-        title: document.title
-      };
-    }
-  });
+  if (!tabId) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // In fallback popup mode, currentWindow is the popup itself! We need the LAST FOCUSED window?
+    // Actually, if we are in sidepanel, currentWindow is browser window.
+    // If we are in popup, we might need 'lastFocusedWindow: true'.
+    // To be safe, if no tab found or we are in popup (chrome.extension.getViews({type: 'popup'}).length > 0?), 
+    // we should rely on tabId passed from background.
+    if (tab) tabId = tab.id;
+  }
 
-  if (!results || !results[0] || !results[0].result) return;
+  if (!tabId) {
+    addMessage('ai', "⚠️ Could not identify the active page. Please try again.");
+    return;
+  }
   
-  const { text, url, title } = results[0].result;
-  
-  const prompt = window.Logic.formatPrompt("Please analyze this page.", text, null, url);
-  handleUserSend(prompt);
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: () => {
+        // Simple extractor
+        return { 
+          text: document.body.innerText,
+          url: window.location.href,
+          title: document.title
+        };
+      }
+    });
+
+    if (!results || !results[0] || !results[0].result) return;
+    
+    const { text, url, title } = results[0].result;
+    
+    const prompt = window.Logic.formatPrompt("Please analyze this page.", text, null, url);
+    handleUserSend(prompt);
+
+  } catch (e) {
+    console.warn("Script injection failed", e);
+    addMessage('ai', `⚠️ Cannot analyze this page (Security restrictions or invalid tab). ID: ${tabId}`);
+  }
 }
 
 // --- API Implementation ---
@@ -371,19 +413,38 @@ function scrollToBottom() {
   els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
 }
 
-// --- Context Handler ---
-function handleRuntimeMessage(request, sender, sendResponse) {
-  if (request.action === "contextMenuData") {
-    // We received data from background context menu
-    const { menuItemId, selectionText, pageUrl } = request;
+// --- Action Processor ---
+
+async function checkPendingAction() {
+  const action = await ActionManager.getPendingAction(true); // true = clear after read
+  if (action) {
+    processAction(action);
+  }
+}
+
+function processAction(data) {
+  // { action: "contextMenu", menuItemId, selectionText, pageUrl, tabId }
+  
+  if (data.action === "contextMenu") {
+    const { menuItemId, selectionText, pageUrl, tabId } = data;
     
     let promptPre = "";
+    let isPageAnalysis = false;
+
     if (menuItemId === "summarize-sel") promptPre = "Summarize this: ";
     if (menuItemId === "explain-sel") promptPre = "Explain this in simple terms: ";
     if (menuItemId === "improve-sel") promptPre = "Improve writing/grammar: ";
     
-    // Trigger sending
-    const prompt = window.Logic.formatPrompt(promptPre, null, selectionText, pageUrl);
-    handleUserSend(prompt);
+    if (menuItemId === "summarize-page") {
+      // Special Handling for full page
+      analyzeCurrentPage(tabId);
+      return; 
+    }
+
+    if (promptPre) {
+       // Trigger sending
+       const prompt = window.Logic.formatPrompt(promptPre, null, selectionText, pageUrl);
+       handleUserSend(prompt);
+    }
   }
 }
