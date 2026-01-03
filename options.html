@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AI Sidekick Options</title>
+    <style>
+      :root {
+        --bg: #f5f5f5;
+        --card-bg: #ffffff;
+        --text: #333333;
+        --border: #e0e0e0;
+        --accent: #5e5ce6; /* Arc Purple-ish */
+        --danger: #ff453a;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1c1c1e;
+          --card-bg: #2c2c2e;
+          --text: #f5f5f5;
+          --border: #3a3a3c;
+        }
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 40px;
+        display: flex;
+        justify-content: center;
+      }
+      .container {
+        max-width: 600px;
+        width: 100%;
+      }
+      h1 {
+        font-weight: 600;
+        margin-bottom: 24px;
+        font-size: 24px;
+      }
+      .card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-bottom: 24px;
+        border: 1px solid var(--border);
+      }
+      .section-title {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      input[type="text"],
+      input[type="password"],
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .hint {
+        font-size: 12px;
+        color: #888;
+        margin-top: 6px;
+      }
+      button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: opacity 0.2s;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .storage-toggle {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .storage-option {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        font-size: 14px;
+      }
+      .storage-option.active {
+        border-color: var(--accent);
+        background: rgba(94, 92, 230, 0.1);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      #status {
+        margin-top: 16px;
+        font-size: 14px;
+        min-height: 20px;
+      }
+      .success {
+        color: #30d158;
+      }
+      .error {
+        color: var(--danger);
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>AI Sidekick Settings</h1>
+
+      <div class="card">
+        <div class="section-title">Security & Storage</div>
+
+        <div class="storage-toggle">
+          <div
+            class="storage-option active"
+            id="btn-device-storage"
+            data-mode="local"
+          >
+            Device Storage
+          </div>
+          <div class="storage-option" id="btn-cloud-vault" data-mode="vault">
+            Cloud Vault (Secure)
+          </div>
+        </div>
+
+        <div class="hint" id="storage-hint">
+          Keys are stored unencrypted in your local Chrome profile. Suitable for
+          personal devices.
+        </div>
+
+        <div
+          id="vault-setup"
+          class="hidden"
+          style="
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+          "
+        >
+          <label>Set Master Password</label>
+          <input
+            type="password"
+            id="vault-password"
+            placeholder="Enter a strong password"
+          />
+          <div class="hint">
+            You will need to enter this password every time you restart your
+            browser.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">API Keys</div>
+
+        <div class="form-group">
+          <label>Google Gemini API Key</label>
+          <input type="password" id="gemini-key" placeholder="AIzaSy..." />
+          <div class="hint">
+            Get it from
+            <a href="https://aistudio.google.com" target="_blank"
+              >Google AI Studio</a
+            >.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>DeepSeek API Key</label>
+          <input type="password" id="deepseek-key" placeholder="sk-..." />
+          <div class="hint">
+            Get it from
+            <a href="https://platform.deepseek.com" target="_blank"
+              >DeepSeek Platform</a
+            >.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Customization</div>
+        <div class="form-group">
+          <label>System Instructions</label>
+          <textarea
+            id="system-instruction"
+            rows="3"
+            placeholder="e.g. Always answer in Italian. Be concise."
+          ></textarea>
+        </div>
+      </div>
+
+      <button id="save-btn">Save Settings</button>
+      <div id="status"></div>
+    </div>
+
+    <script src="lib/crypto-utils.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Sidekick</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Encrypted Vault Unlock Screen -->
+  <div id="vault-overlay" class="hidden">
+    <h2>🔐 Unlock Your Keys</h2>
+    <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Enter your Master Password to access API keys.</p>
+    <input type="password" id="vault-password-input" placeholder="Master Password">
+    <button id="vault-unlock-btn">Unlock</button>
+  </div>
+
+  <header>
+    <div class="model-select-wrapper">
+      <select id="model-select">
+        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Smarth)</option>
+        <option value="deepseek-chat">DeepSeek V3 (Chat)</option>
+        <option value="deepseek-reasoner">DeepSeek R1 (Reasoner)</option>
+        <option value="gemini-web">🌐 Gemini Web (Free)</option>
+      </select>
+    </div>
+    <button id="new-chat-btn" class="icon-btn" title="New Chat">
+      <!-- Simple SVG Refresh Icon -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+    </button>
+     <button id="analyze-page-btn" class="icon-btn" title="Analyze Page">
+      <!-- Simple SVG Eye Icon -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    </button>
+  </header>
+
+  <div id="chat-history">
+    <!-- Messages will be injected here -->
+    <div class="message ai">
+      <div class="bubble">
+        Hello! I'm your AI Sidekick. How can I help you today?
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="input-container">
+      <textarea id="prompt-input" placeholder="Type a message..."></textarea>
+      <button id="send-btn">Send</button>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="lib/marked.min.js"></script>
+  <script src="lib/crypto-utils.js"></script>
+  <script src="lib/logic.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
