@@ -23,8 +23,7 @@
     "default_path": "sidepanel.html"
   },
   "action": {
-    "default_title": "Open AI Sidekick",
-    "default_popup": "sidepanel.html"
+    "default_title": "Open AI Sidekick"
   },
   "options_ui": {
     "page": "options.html",

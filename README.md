@@ -36,9 +36,11 @@ AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM 
 2.  **Paste Keys** (Stored locally or encrypted in Cloud Vault):
     - [Get Gemini Key](https://aistudio.google.com/app/apikey)
     - [Get DeepSeek Key](https://platform.deepseek.com/api_keys)
-3.  **Arc Browser Tip**:
-    - If the icon isn't visible, hover over the URL bar, click the **Puzzle Piece 🧩**, and **Pin 📌** the AI Sidekick extension.
-    - If the Side Panel doesn't open on click, try **Right Click -> AI Sidekick -> Open Side Panel**.
+3.  **Arc Browser Setup**:
+    -   **Pin the Extension**: Hover over the URL bar -> Click Puzzle Piece 🧩 -> Pin 📌 AI Sidekick.
+    -   **Toolbar Icon**: Clicking the icon now opens **Options/Config** (to keep your workspace clean).
+    -   **Open Chat**: Use **Right Click -> AI Sidekick -> Open Sidekick Here** (or Summarize/Explain).
+    -   **Split View**: To use alongside a page, open Sidekick, then click the **External Link Icon** (top right) to open in a tab -> Drag to Split View.
 
 ## 🧪 Testing
 **Manual Verification**:

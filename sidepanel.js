@@ -12,7 +12,8 @@ const state = {
   chatHistory: [], // Stores { role: 'user'|'ai', text: string }
   isGenerating: false,
   abortController: null,
-  deferredAction: null // Store action if vault is locked
+  deferredAction: null, // Store action if vault is locked
+  currentContextUrl: null 
 };
 
 // --- DOM Elements ---
@@ -27,7 +28,9 @@ const els = {
   notificationToast: document.getElementById('notification-toast'),
   vaultOverlay: document.getElementById('vault-overlay'),
   vaultPassInput: document.getElementById('vault-password-input'),
-  vaultUnlockBtn: document.getElementById('vault-unlock-btn')
+  vaultUnlockBtn: document.getElementById('vault-unlock-btn'),
+  openTabBtn: document.getElementById('open-tab-btn'),
+  contextUrl: document.getElementById('context-url')
 };
 
 // --- Initialization ---
@@ -47,6 +50,11 @@ async function init() {
   els.newChatBtn.addEventListener('click', resetChat);
   els.analyzePageBtn.addEventListener('click', analyzeCurrentPage);
   if (els.summarizeBtn) els.summarizeBtn.addEventListener('click', handleSummarizeContext);
+  if (els.openTabBtn) {
+    els.openTabBtn.addEventListener('click', () => {
+       chrome.tabs.create({ url: chrome.runtime.getURL('sidepanel.html') });
+    });
+  }
   
   // Vault Listeners
   els.vaultUnlockBtn.addEventListener('click', unlockVault);
@@ -68,10 +76,14 @@ async function init() {
   await checkPendingAction();
 
   // 2. Listen for new actions (if panel is already open)
+  // 2. Listen for new actions (if panel is already open)
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.pendingAction && changes.pendingAction.newValue) {
-      processAction(changes.pendingAction.newValue);
-      ActionManager.clearPendingAction();
+      // FIX: Race Condition
+      // Instead of using the value directly (which ALL open windows receive),
+      // we trigger the atomic 'checkPendingAction' which consumes the action.
+      // Only the first window to grab it will process it. Others get null.
+      checkPendingAction();
     }
   });
 
@@ -667,7 +679,18 @@ function processAction(data) {
       return; // Stop here
   }
   
-  // { action: "contextMenu", menuItemId, selectionText, pageUrl, tabId }
+  // { action: "contextMenu"|"openOnly", menuItemId, selectionText, pageUrl, tabId }
+  
+  // 1. Update Context Bar always
+  if (data.pageUrl) {
+    updateContextBar(data.pageUrl);
+  }
+  
+  // 2. Handle "Open Sidekick Here" (Just open/update context, no chat)
+  if (data.action === "openOnly") {
+     console.log("Sidekick opened for context:", data.pageUrl);
+     return;
+  }
   
   if (data.action === "contextMenu") {
     const { menuItemId, selectionText, pageUrl, tabId } = data;
@@ -691,5 +714,20 @@ function processAction(data) {
        });
        handleUserSend(prompt);
     }
+  }
+}
+
+function updateContextBar(url) {
+  state.currentContextUrl = url;
+  if (!url) {
+    els.contextUrl.textContent = "No active context";
+    return;
+  }
+  try {
+    const u = new URL(url);
+    els.contextUrl.textContent = u.hostname + (u.pathname.length > 1 ? u.pathname : "");
+    els.contextUrl.title = url; // Full tooltip
+  } catch (e) {
+    els.contextUrl.textContent = url;
   }
 }
