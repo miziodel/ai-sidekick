@@ -138,6 +138,7 @@ async function saveOptions() {
       });
       // Clear any sync vault data to avoid confusion
       await chrome.storage.sync.remove('vault');
+      await chrome.storage.session.remove('decryptedKeys'); // Clear any active session
     } else {
       // VAULT MODE
       if (!vaultPass) {

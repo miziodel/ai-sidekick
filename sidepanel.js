@@ -11,7 +11,8 @@ const state = {
   storageMode: 'local',
   chatHistory: [], // Stores { role: 'user'|'ai', text: string }
   isGenerating: false,
-  abortController: null
+  abortController: null,
+  deferredAction: null // Store action if vault is locked
 };
 
 // --- DOM Elements ---
@@ -70,11 +71,26 @@ async function init() {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.pendingAction && changes.pendingAction.newValue) {
       processAction(changes.pendingAction.newValue);
-      // Clear it so we don't process it again on reload? 
-      // Actually ActionManager.getPendingAction clears it. 
-      // But here we read directly from change. We should clear it after processing to keep cleanliness.
       ActionManager.clearPendingAction();
     }
+  });
+
+  // 3. Listen for Session Changes (e.g. cleared by Options or Auto-Lock from background)
+  chrome.storage.session.onChanged.addListener((changes) => {
+      if (changes.decryptedKeys && !changes.decryptedKeys.newValue) {
+          // Keys cleared -> Lock
+          lockVault();
+      }
+  });
+
+  // 4. Auto-Lock Alarm Listener
+  chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name === 'autoLock') {
+          // Time's up!
+          clearSession();
+          lockVault();
+          showNotification("🔐 Vault auto-locked due to inactivity.");
+      }
   });
 }
 
@@ -121,11 +137,9 @@ async function loadSettings() {
   } else {
       // Default welcome
       // (If history empty, show welcome)
+      // (If history empty, show welcome)
      if (state.chatHistory.length === 0) {
-        // defined in HTML, so do nothing or reset?
-        // HTML has welcome message. If we clear innerHTML we lose it.
-        // If we have history, we cleared above. 
-        // If no history, we keep HTML default.
+        // defined in HTML
      }
   }
 
@@ -135,9 +149,15 @@ async function loadSettings() {
     state.keys.deepseek = data.deepseekKey;
     hideVaultOverlay();
   } else {
-    // Vault mode: Check if we have keys in memory (we don't on reload).
-    // Show overlay to force unlock.
-    showVaultOverlay();
+    // Vault mode: Check session storage for decrypted keys
+    const session = await chrome.storage.session.get(['decryptedKeys']);
+    if (session.decryptedKeys) {
+        state.keys = session.decryptedKeys;
+        hideVaultOverlay();
+        resetAutoLock(); // active session
+    } else {
+        showVaultOverlay();
+    }
   }
 }
 
@@ -148,8 +168,25 @@ function showVaultOverlay() {
   els.vaultPassInput.focus();
 }
 
+// --- Vault Logic ---
+
 function hideVaultOverlay() {
   els.vaultOverlay.classList.add('hidden');
+}
+
+function resetAutoLock() {
+    if (state.storageMode === 'vault' && state.keys.gemini) {
+        chrome.alarms.create('autoLock', { delayInMinutes: 15 });
+    }
+}
+
+function clearSession() {
+    chrome.storage.session.remove('decryptedKeys');
+}
+
+function lockVault() {
+    state.keys = { gemini: null, deepseek: null };
+    showVaultOverlay();
 }
 
 async function unlockVault() {
@@ -169,7 +206,19 @@ async function unlockVault() {
     state.keys.gemini = keys.geminiKey;
     state.keys.deepseek = keys.deepseekKey;
     
+    // Save to Session
+    await chrome.storage.session.set({ decryptedKeys: state.keys });
+    resetAutoLock();
+
     hideVaultOverlay();
+
+    // Check deferred action
+    if (state.deferredAction) {
+        const action = state.deferredAction;
+        state.deferredAction = null;
+        processAction(action);
+    }
+
     els.promptInput.focus();
   } catch (error) {
     alert("Unlock failed: " + error.message);
@@ -229,6 +278,7 @@ async function handleUserSend(overrideText = null, displayText = null) {
   } finally {
     state.isGenerating = false;
     els.sendBtn.disabled = false;
+    resetAutoLock(); // Interactions reset timer
   }
 }
 
@@ -609,6 +659,14 @@ async function checkPendingAction() {
 }
 
 function processAction(data) {
+  // Check if locked
+  if (state.storageMode === 'vault' && !state.keys.gemini) {
+      console.log("Vault locked, deferring action", data);
+      state.deferredAction = data;
+      showNotification("🔒 Please unlock vault to proceed.");
+      return; // Stop here
+  }
+  
   // { action: "contextMenu", menuItemId, selectionText, pageUrl, tabId }
   
   if (data.action === "contextMenu") {

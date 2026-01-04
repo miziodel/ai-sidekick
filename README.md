@@ -8,7 +8,9 @@ AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM 
 ## 🎯 Key Features
 - **Multi-Model**: Switch between **Gemini 2.5** (Pro/Flash) and **DeepSeek** (V3/R1 Reasoner).
 - **Conversation Memory**: Maintains chat history across sessions with a "Sliding Window" (keeps last 10 messages) to manage token usage.
-- **Secure Vault**: Client-side encryption (PBKDF2 + AES-GCM) for API keys. No backend required.
+- **Secure Vault**: Client-side encryption (PBKDF2 + AES-GCM) for API keys.
+    - **Session Persistence**: Keys stay unlocked for the browser session.
+    - **Auto-Lock**: Automatically locks after 15 minutes of inactivity.
 - **Web Mode**: Fallback to `gemini.google.com` (free) if no API key is available.
 - **Contextual Actions**:
     - Right-click to Explain, Summarize, or Analyze pages.

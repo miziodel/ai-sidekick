@@ -88,3 +88,17 @@ Developing for Arc Browser requires specific considerations compared to standard
     - **URL Only**: Minimal cost, fast.
     - **Full Text**: Maximum context, higher cost/latency.
     - Allow the user to override this in Options.
+
+## 15. Managing State in Manifest V3 (Session vs. Global Vars)
+- **Issue**: Storing state (e.g., unlocked keys) in a global variable (`window.keys`) is unreliable because the Extension Service Worker and Side Panel can terminate or "freeze" at any time, wiping the state. Reloading the extension (developer mode) definitely wipes it.
+- **Solution**: **chrome.storage.session**.
+    - This is the canonical place for in-memory, session-scoped data.
+    - It survives context invalidation, side panel close/reopen, and worker suspension.
+    - It is isolated from content scripts (secure).
+    - It is cleared on browser quit (transient).
+
+## 16. Regression Prevention (The "Deleted Function" Incident)
+- **Incident**: During a refactor, a critical helper function (`hideVaultOverlay`) was accidentally deleted. The linter was not running to catch "Undefined function", leading to a runtime crash on startup.
+- **Lesson**: **Static Analysis is Mandatory**.
+- **Fix**: We must implement `ESLint` in the build pipeline. We cannot rely solely on manual testing or "being careful".
+- **Action**: Creating a `package.json` with `eslint` is the next priority infrastructure task.
