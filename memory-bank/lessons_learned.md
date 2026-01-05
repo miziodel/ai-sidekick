@@ -91,6 +91,12 @@ Developing for Arc Browser requires specific considerations compared to standard
 
 ## 15. Managing State in Manifest V3 (Session vs. Global Vars)
 - **Issue**: Storing state (e.g., unlocked keys) in a global variable (`window.keys`) is unreliable because the Extension Service Worker and Side Panel can terminate or "freeze" at any time, wiping the state. Reloading the extension (developer mode) definitely wipes it.
+- **Service Worker Persistence**: Service workers in MV3 are ephemeral. Storing state (like window IDs) in global variables is flaky.
+  - **Solution**: Use `chrome.storage.session` for in-memory state that survives SW restarts but clears on browser exit.
+- **Arc Browser: Window Destruction != Tab Death**: In Arc, promoting a "Little Arc" or Popup window to a main tab triggers `chrome.windows.onRemoved`, but the `tabId` remains valid and moves to a new window.
+  - **Solution**: Track `{ windowId, tabId }`. In `onRemoved`, check if `tabId` is still alive using `chrome.tabs.get`. If yes, update the tracked `windowId` instead of clearing state. This allows the extension to "stick" to the user's session across UI migrations.
+- **Debugging: The "Deep Inspection" Rule**: When standard logic fails silently (e.g. extension says "tab not found" but you see it), do NOT assume API behavior.
+  - **Solution**: Log EVERYTHING. Dump `chrome.tabs.query({})`. Dump `win.tabs`. We found that Arc hides URLs in some contexts (returning undefined or empty), causing standard matchers to fail. Always instrument code to reveal the *actual* data shape before trying to fix logic. "Don't guess, inspect."
 - **Solution**: **chrome.storage.session**.
     - This is the canonical place for in-memory, session-scoped data.
     - It survives context invalidation, side panel close/reopen, and worker suspension.

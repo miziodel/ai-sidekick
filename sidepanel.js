@@ -76,14 +76,17 @@ async function init() {
   await checkPendingAction();
 
   // 2. Listen for new actions (if panel is already open)
-  // 2. Listen for new actions (if panel is already open)
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.pendingAction && changes.pendingAction.newValue) {
-      // FIX: Race Condition
-      // Instead of using the value directly (which ALL open windows receive),
-      // we trigger the atomic 'checkPendingAction' which consumes the action.
-      // Only the first window to grab it will process it. Others get null.
-      checkPendingAction();
+  // 2. Listen for DIRECT MESSAGES (Message Passing Architecture)
+  // This solves the race condition by letting the background script decide WHO executes.
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'PING') {
+      sendResponse({ status: 'alive' });
+      return;
+    }
+    if (message.type === 'EXECUTE_ACTION' && message.data) {
+       console.log("Received direct execution command", message.data);
+       processAction(message.data);
+       sendResponse({ status: 'started' });
     }
   });
 

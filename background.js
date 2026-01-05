@@ -47,26 +47,28 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   chrome.contextMenus.create({
     parentId: "ai-sidekick-root",
+    id: "separator-1",
+    type: "separator",
     contexts: ["all"]
   });
 });
 
 importScripts('lib/action-manager.js');
 
-// Track the existing extension window ID (Single Instance)
+// Track the existing extension state (Single Instance)
 // We use chrome.storage.session so this survives Service Worker restarts.
-let inMemoryWinId = null;
+let inMemoryState = null;
 
-async function getSidekickWindowId() {
+async function getSidekickState() {
   // Check memory first
-  if (inMemoryWinId) return inMemoryWinId;
+  if (inMemoryState) return inMemoryState;
   
   // Check session storage
   try {
-    const data = await chrome.storage.session.get(['sidekickWindowId']);
-    if (data.sidekickWindowId) {
-      inMemoryWinId = data.sidekickWindowId;
-      return inMemoryWinId;
+    const data = await chrome.storage.session.get(['sidekickState']);
+    if (data.sidekickState) {
+      inMemoryState = data.sidekickState;
+      return inMemoryState;
     }
   } catch (e) {
     console.warn("Failed to read session storage", e);
@@ -74,95 +76,146 @@ async function getSidekickWindowId() {
   return null;
 }
 
-async function setSidekickWindowId(id) {
-  inMemoryWinId = id;
+// Save both Window ID and Tab ID (for resilience)
+async function setSidekickState(windowId, tabId) {
+  inMemoryState = { windowId, tabId };
   try {
-    if (id) {
-       await chrome.storage.session.set({ sidekickWindowId: id });
+    if (windowId) {
+       await chrome.storage.session.set({ sidekickState: { windowId, tabId } });
     } else {
-       await chrome.storage.session.remove('sidekickWindowId');
+       await chrome.storage.session.remove('sidekickState');
     }
-  } catch(e) { console.error("Failed to save Window ID", e); }
+  } catch(e) { console.error("Failed to save Sidekick State", e); }
 }
 
-// Cleanup when window is closed
+// Cleanup OR Migration when window is closed
+// Arc specific: Promoting a Little Arc window to a Tab DESTROYS the window but KEEPS the tab alive.
+// Cleanup OR Migration when window is closed
+// Arc specific: Promoting a Little Arc window to a Tab DESTROYS the window but KEEPS the tab alive.
 chrome.windows.onRemoved.addListener(async (windowId) => {
-  const currentId = await getSidekickWindowId();
-  if (currentId === windowId) {
-    console.log("Sidekick window closed. Clearing ID.");
-    setSidekickWindowId(null);
+  const currentState = await getSidekickState();
+  if (currentState && currentState.windowId === windowId) {
+    // Check if the tab survived (Migration)
+    if (currentState.tabId) {
+       try {
+         const tab = await chrome.tabs.get(currentState.tabId);
+         if (tab && tab.id === currentState.tabId) {
+            // Update state to point to the new window
+            setSidekickState(tab.windowId, tab.id);
+            return;
+         }
+       } catch(e) {
+         // Tab likely died with window, proceed to clear
+       }
+    }
+    
+    setSidekickState(null, null);
   }
 });
 
 // Helper to open the extension logic
 async function openExtension(tab) {
-  const trackedId = await getSidekickWindowId();
+  const state = await getSidekickState();
+  const trackedId = state ? state.windowId : null;
+  
+  let targetTab = null;
 
-  // 1. Check if we already have a window open and if it's still valid
+  // 1. Try to find an existing extension instance (Tab or Window)
+  
   if (trackedId) {
     try {
-      const win = await chrome.windows.get(trackedId);
-      if (win) {
-        // It exists, just focus it
-        await chrome.windows.update(trackedId, { focused: true });
-        return; // Done!
-      }
-    } catch (e) {
-      // Window was likely closed by user, reset tracking
-      // (This usually catches cases where onRemoved didn't fire or we missed it)
-      console.log("Tracked window not found, resetting.");
-      setSidekickWindowId(null);
+       const win = await chrome.windows.get(trackedId, { populate: true });
+       if (win.tabs) {
+         const trackedTabId = state ? state.tabId : null;
+         
+         // 1. GOLDEN PATH: We know the exact Tab ID we want.
+         if (trackedTabId) {
+             targetTab = win.tabs.find(t => t.id === trackedTabId);
+         }
+
+         // 2. URL / Title Match (if Tab ID match failed or wasn't tracked)
+         if (!targetTab) {
+             targetTab = win.tabs.find(t => 
+                 (t.url && t.url.includes("sidepanel.html")) || 
+                 t.title === "AI Sidekick"
+             );
+         }
+         
+         // 3. Fallback: Adopting ACTIVE tab in tracked window.
+         if (!targetTab) {
+             targetTab = win.tabs.find(t => t.active) || win.tabs[0];
+         }
+       }
+    } catch(e) {
+       // We don't clear state here immediately, just let it fall through.
     }
   }
 
-  let windowId;
-  
-  // Try to get Window ID from tab, or fallback to last focused window
-  if (tab && tab.windowId) {
-    windowId = tab.windowId;
-  } else {
-    try {
-      const win = await chrome.windows.getLastFocused();
-      if (win) windowId = win.id;
-    } catch (e) { console.warn("Could not get last focused window", e); }
+  // If we haven't pinpointed a tab yet, do a global search
+  if (!targetTab) {
+     const allTabs = await chrome.tabs.query({});
+     
+     // Match by URL or Title
+     targetTab = allTabs.find(t => 
+        (t.url && t.url.includes("sidepanel.html")) ||
+        t.title === "AI Sidekick"
+     );
+     
+     if (targetTab) {
+       setSidekickState(targetTab.windowId, targetTab.id);
+     }
   }
 
-  // 2. Try Side Panel (Chrome specific, often fails in Arc)
-  try {
-    // Only attempt sidePanel if we are in a context where it makes sense (standard Chrome)
-    // and NOT if we are forcing the single-instance popup flow.
-    // However, since we want to support both:
-    if (!windowId) throw new Error("No valid window ID found for Side Panel");
-    
-    // Attempt to open side panel
-    await chrome.sidePanel.open({ windowId: windowId });
-  } catch (err) {
-    console.warn("Side Panel open failed, falling back to Popup:", err);
-    
-    // 3. Fallback: Search for existing Tab or Popup (Arc "Little Arc" -> Tab promotion issue)
-    const existingTabs = await chrome.tabs.query({ url: chrome.runtime.getURL("sidepanel.html") });
-    if (existingTabs && existingTabs.length > 0) {
-      // Found an existing tab/window! Adopt it.
-      const tab = existingTabs[0];
-      await chrome.windows.update(tab.windowId, { focused: true });
-      await chrome.tabs.update(tab.id, { active: true }); // Ensure tab is active in that window
-      setSidekickWindowId(tab.windowId); // Self-heal tracking
-    } else {
-      // 4. Create new Popup
-      try {
-         const newWin = await chrome.windows.create({
-          url: "sidepanel.html",
-          type: "popup",
-          width: 400,
-          height: 600
-        });
-        // Track this new window
-        if (newWin) {
-          setSidekickWindowId(newWin.id);
-        }
-      } catch (createErr) {
-        console.error("Failed to create popup window:", createErr);
+  // 2. DISPATCH or CREATE
+  let focused = false;
+
+  if (targetTab) {
+     // Update State to ensure we have the Tab ID tracked (Migration Fix)
+     setSidekickState(targetTab.windowId, targetTab.id);
+     
+     // A. EXISTING found -> Liveness Check & Focus
+     try {
+       // 1. LIVENESS CHECK (Ping)
+       await chrome.tabs.sendMessage(targetTab.id, { type: 'PING' });
+       
+       // 2. If Alive, Focus it
+       await chrome.windows.update(targetTab.windowId, { focused: true });
+       await chrome.tabs.update(targetTab.id, { active: true });
+       
+       // 3. Send Pending Action (if any)
+       const pending = await ActionManager.getPendingAction(false); 
+       if (pending) {
+          chrome.tabs.sendMessage(targetTab.id, { type: 'EXECUTE_ACTION', data: pending })
+            .then(() => {
+                ActionManager.getPendingAction(true); 
+            })
+            .catch(err => {
+                console.warn("Action send failed despite Ping success?", err);
+            });
+       }
+       focused = true; 
+     } catch (e) {
+       console.error("Tab DEAD/ZOMBIE or Focus Failed. Fallback to create.", e);
+       setSidekickState(null, null); 
+     }
+  }
+
+  // B. Fallback: Create New Popup if no tab was found OR if focus failed
+  if (!focused) {
+    try {
+        const newWin = await chrome.windows.create({
+        url: "sidepanel.html",
+        type: "popup",
+        width: 400,
+        height: 600
+      });
+      if (newWin) {
+        // Track both Window AND Tab ID (if available)
+        const newTabId = (newWin.tabs && newWin.tabs[0]) ? newWin.tabs[0].id : null;
+        setSidekickState(newWin.id, newTabId);
       }
+    } catch (createErr) {
+      console.error("Failed to create popup window:", createErr);
     }
   }
 }

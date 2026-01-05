@@ -31,7 +31,8 @@
 - **Destructive Summarization**: When summarizing context, replace the entire history with the summary (must be detailed) to save tokens/screen space.
 
 ### Arc Browser Support
-- [x] **Single Instance (Robust)**: Uses `chrome.storage.session` to track and focus the existing extension window, preventing duplicates even after Service Worker sleep.
+- [x] **Robust Migration**: Fully handles "Little Arc" to "Main Tab" promotion using Tab Survival tracking.
+- [x] **Resilient Discovery**: Uses Title matching and "blind trust" for Active Tabs to bypass Arc's URL obfuscation.
 - [x] **Split View Compatible**: "Open in Tab" button allows opening chat in a standard tab for Arc Split View.
 - [x] **Context Awareness**: "Open Sidekick Here" menu item allows setting context without triggering a prompt.
 - [x] **UI Context Bar**: Visual indicator of the active page URL being analyzed.
