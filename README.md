@@ -1,5 +1,7 @@
 # AI Sidekick - Chrome Extension
 
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-draft-orange.svg)
+
 AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM chat (Gemini & DeepSeek) and contextual analysis to your browser side panel.
 
 > ⚠️ **Note:** This project is currently in a **super draft** phase. Many features are still in the conceptual stage or only partially implemented.
@@ -70,4 +72,17 @@ Use these placeholders to insert dynamic content into your prompts:
 - **Summarize Selection**: `Summarize this in 3 bullet points: {{selection}}`
 - **Explain Selection**: `Explain this to a 5-year-old: {{selection}}`
 - **Analyze Page**: `Find any deadlines mentioned in this page: {{content}}`
+
+
+## 🤝 Contributing
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to get started.
+
+## 🔒 Security & Privacy
+- **Privacy**: API Keys are stored locally on your device. If you use the Cloud Vault feature, they are encrypted with a Master Password using your Google Account for sync, but **we cannot see your keys**. No usage data is collected.
+- **Security**: If you find a vulnerability, please see [SECURITY.md](SECURITY.md).
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Third-party libraries are listed in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 

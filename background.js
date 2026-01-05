@@ -1,7 +1,13 @@
 /**
+ * Copyright (c) 2026 Maurizio Delmonte
+ * Licensed under the MIT License. See LICENSE file in the project root for full license information.
+ */
+
+/**
  * BACKGROUND SCRIPT
  * Handles Context Menus and Side Panel opening.
  */
+
 
 // Setup Context Menus on Install
 chrome.runtime.onInstalled.addListener(() => {

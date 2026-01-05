@@ -108,3 +108,15 @@ Developing for Arc Browser requires specific considerations compared to standard
 - **Lesson**: **Static Analysis is Mandatory**.
 - **Fix**: We must implement `ESLint` in the build pipeline. We cannot rely solely on manual testing or "being careful".
 - **Action**: Creating a `package.json` with `eslint` is the next priority infrastructure task.
+
+## 17. Licensing & Compliance
+- **Rule**: Always verify copyright headers on *all* source files (JS, HTML, CSS) before release.
+- **Rule**: Explicitly list and verify licenses of *all* third-party software.
+    - Check for "Viral" licenses (GPL) which may be incompatible.
+    - Do not rely on AI hallucinations for license text; verify the actual file headers or `LICENSE` files in the dependencies.
+    - Attribution must be precise (Year, Holder).
+
+## Current Status
+- **Core**: Stable.
+- **UI**: Functional draft.
+- **Licensing**: Implemented (MIT).

@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2026 Maurizio Delmonte
+ * Licensed under the MIT License. See LICENSE file in the project root for full license information.
+ */
+
+/**
  * OPTIONS LOGIC
  * Handles saving/loading settings and managing the secure vault.
  */

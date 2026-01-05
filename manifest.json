@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "AI Sidekick",
   "version": "1.0.0",
+  "author": "Maurizio Delmonte",
   "description": "Your multi-LLM AI assistant for the web. Supports Gemini & DeepSeek.",
   "permissions": [
     "sidePanel",
