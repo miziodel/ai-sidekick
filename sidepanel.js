@@ -103,7 +103,34 @@ async function init() {
       }
   });
 
-  // 4. Auto-Lock Alarm Listener
+  // 4. Listen for Settings Changes (Hot-Reload)
+  chrome.storage.local.onChanged.addListener((changes) => {
+      // Prompts Update
+      if (changes.prompts && changes.prompts.newValue) {
+          console.log("Prompts updated hot-reload");
+          // Re-merge with defaults to ensure completeness
+          const defaults = {};
+          if (typeof PROMPT_REGISTRY !== 'undefined') {
+            for (const [key, config] of Object.entries(PROMPT_REGISTRY)) {
+               defaults[key] = config.prompt;
+            }
+          }
+          state.prompts = { ...defaults, ...changes.prompts.newValue };
+      }
+      
+      // Keys Update (if in local mode)
+      if (state.storageMode === 'local') {
+          if (changes.geminiKey) state.keys.gemini = changes.geminiKey.newValue;
+          if (changes.deepseekKey) state.keys.deepseek = changes.deepseekKey.newValue;
+      }
+      
+      // System Instruction Update
+      if (changes.systemInstruction) {
+          state.systemInstruction = changes.systemInstruction.newValue || "";
+      }
+  });
+
+  // 5. Auto-Lock Alarm Listener
   chrome.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === 'autoLock') {
           // Time's up!
@@ -125,12 +152,19 @@ async function loadSettings() {
   state.systemInstruction = data.systemInstruction || "";
 
   // Load Prompts
-  const defaults = {
-      "summarize": "Summarize this: {{selection}}",
-      "explain": "Explain this in simple terms: {{selection}}",
-      "improve": "Improve writing/grammar: {{selection}}",
-      "analyze": "Please summarize this page.\n\nContext:\n{{content}}\n\nURL: {{url}}"
-  };
+  // Load Prompts
+  // Build defaults from PROMPT_REGISTRY
+  const defaults = {};
+  if (typeof PROMPT_REGISTRY !== 'undefined') {
+    for (const [key, config] of Object.entries(PROMPT_REGISTRY)) {
+       defaults[key] = config.prompt;
+    }
+  } else {
+    // Fallback if script loading failed
+    defaults["summarize"] = "Summarize this: {{selection}}";
+    defaults["explain"] = "Explain this: {{selection}}";
+  }
+
   state.prompts = { ...defaults, ...(data.prompts || {}) };
   
   // Load History
@@ -220,7 +254,7 @@ async function unlockVault() {
       return;
     }
 
-    const decryptedJson = await window.CryptoUtils.decryptVault(syncData.vault, password);
+    const decryptedJson = await CryptoUtils.decryptVault(syncData.vault, password);
     const keys = JSON.parse(decryptedJson);
     
     state.keys.gemini = keys.geminiKey;
@@ -350,7 +384,7 @@ function showNotification(text) {
 
 // --- Page Analysis ---
 
-async function analyzeCurrentPage(overrideTabId = null) {
+async function analyzeCurrentPage(overrideTabId = null, promptKey = 'summarize_page') {
   // Use passed tabId (from context menu) OR query active tab
   let tabId = overrideTabId;
   let tabUrl = "";
@@ -430,15 +464,29 @@ async function analyzeCurrentPage(overrideTabId = null) {
   }
 
   // Pass chosen content with dynamic prompt
-  const template = state.prompts.analyze;
+  // Use Passed Prompt Key (default summarize_page)
+  const template = state.prompts[promptKey] || state.prompts['summarize_page'];
+  
   const prompt = window.Logic.formatPrompt(template, {
-      content: finalText, 
+      content: finalText || "No content available", 
       url: finalUrl,
-      title: tabTitle
+      title: tabTitle,
+      page_content: finalText || "No content available", // Support both variable names
+      selection: finalText || "No content available" // Fallback for templates using {{selection}}
   });
   
   // Send with clean display text
-  handleUserSend(prompt, "Summarize this page");
+  // Use title from registry if available
+  let displayTitle = "Summarize this page";
+  if (state.prompts[promptKey]) {
+      // We don't have titles in state.prompts (only strings), we'd need registry lookup or just use prompt.
+      // Let's just use a generic "Analyzing Page..." or the prompt key name humanized?
+      // Simple fallback:
+      if (promptKey === 'key_takeaways') displayTitle = "Key Takeaways (Page)";
+      if (promptKey === 'action_items') displayTitle = "Find Action Items (Page)";
+  }
+  
+  handleUserSend(prompt, displayTitle);
 }
 
 // --- API Implementation ---
@@ -703,16 +751,22 @@ function processAction(data) {
   if (data.action === "contextMenu") {
     const { menuItemId, selectionText, pageUrl, tabId } = data;
     
-    let template = "";
-    if (menuItemId === "summarize-sel") template = state.prompts.summarize;
-    if (menuItemId === "explain-sel") template = state.prompts.explain;
-    if (menuItemId === "improve-sel") template = state.prompts.improve;
+    // Generic Handler for all Registry items
     
-    if (menuItemId === "summarize-page") {
-      // Special Handling for full page
-      analyzeCurrentPage(tabId);
-      return; 
+    // Check if this is a PAGE action (no selection) OR explicitly 'summarize_page'
+    // We can infer it's a page action if selectionText is missing/empty, 
+    // BUT we must filter out cases where user just clicked "Explain" on nothing (which might be invalid).
+    // Better: Check if the promptKey is known to be page-capable. 
+    // For now, if selectionText is missing, we assumes it's a Page action IF it's in our allow-list or logic.
+    const isPageAction = !selectionText || menuItemId === "summarize_page";
+
+    if (isPageAction) {
+      analyzeCurrentPage(tabId, menuItemId);
+      return;
     }
+
+    // For all selection-based prompts
+    const template = state.prompts[menuItemId];
 
     if (template) {
        // Trigger sending
@@ -720,7 +774,12 @@ function processAction(data) {
            selection: selectionText,
            url: pageUrl
        });
+       
+       // Use title from registry if available for display? 
+       // For now just send as User.
        handleUserSend(prompt);
+    } else {
+        console.warn("Unknown prompt action:", menuItemId);
     }
   }
 }

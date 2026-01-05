@@ -116,6 +116,13 @@ Developing for Arc Browser requires specific considerations compared to standard
     - Do not rely on AI hallucinations for license text; verify the actual file headers or `LICENSE` files in the dependencies.
     - Attribution must be precise (Year, Holder).
 
+## 18. UX: Instant Feedback with Hot-Reload
+- **Issue**: Users assume that saving "Options" immediately affects the extension, but often extensions require a reload or a new session to pick up changes.
+- **Pattern**: **Passive Storage Listeners**.
+    - Use `chrome.storage.local.onChanged` in the sidepanel/popup script.
+    - Since this listener is passive, it costs **zero resources** when idle.
+    - This creates a "native app" feel where configuration changes on one screen (Options) instantly reflect on another (Side Panel).
+
 ## Current Status
 - **Core**: Stable.
 - **UI**: Functional draft.

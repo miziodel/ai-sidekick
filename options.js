@@ -21,30 +21,19 @@ const els = {
   vaultSetup: document.getElementById('vault-setup'),
   vaultPassword: document.getElementById('vault-password'),
   storageHint: document.getElementById('storage-hint'),
-  // Prompts
-  promptSummarize: document.getElementById('prompt-summarize'),
-  promptExplain: document.getElementById('prompt-explain'),
-  promptImprove: document.getElementById('prompt-improve'),
-  promptAnalyze: document.getElementById('prompt-analyze'),
+  // Prompts Container
+  promptsContainer: document.getElementById('prompts-container'),
   resetPromptsBtn: document.getElementById('reset-prompts-btn')
 };
 
 let currentMode = 'local'; // 'local' or 'vault'
-
-// Defaults
-const DEFAULT_PROMPTS = {
-    "summarize": "Summarize this: {{selection}}",
-    "explain": "Explain this in simple terms: {{selection}}",
-    "improve": "Improve writing/grammar: {{selection}}",
-    "analyze": "Please summarize this page.\n\nContext:\n{{content}}\n\nURL: {{url}}"
-};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', restoreOptions);
 els.saveBtn.addEventListener('click', saveOptions);
 els.btnLocal.addEventListener('click', () => setMode('local'));
 els.btnVault.addEventListener('click', () => setMode('vault'));
-els.resetPromptsBtn.addEventListener('click', resetPrompts);
+els.resetPromptsBtn.addEventListener('click', handleResetPrompts);
 
 function setMode(mode) {
   currentMode = mode;
@@ -81,12 +70,8 @@ function restoreOptions() {
         els.systemInstruction.value = localData.systemInstruction;
       }
 
-      // Restore Prompts
-      const prompts = localData.prompts || {};
-      els.promptSummarize.value = prompts.summarize || DEFAULT_PROMPTS.summarize;
-      els.promptExplain.value = prompts.explain || DEFAULT_PROMPTS.explain;
-      els.promptImprove.value = prompts.improve || DEFAULT_PROMPTS.improve;
-      els.promptAnalyze.value = prompts.analyze || DEFAULT_PROMPTS.analyze;
+      // Restore Prompts (Render Dynamically)
+      renderPrompts(localData.prompts || {});
 
       // Check storage mode
       if (localData.storageMode === 'vault') {
@@ -107,6 +92,39 @@ function restoreOptions() {
 }
 
 /**
+ * Render Prompt Inputs dynamically based on PROMPT_REGISTRY
+ */
+function renderPrompts(savedPrompts) {
+    els.promptsContainer.innerHTML = ''; // Clear
+
+    if (typeof PROMPT_REGISTRY === 'undefined') {
+        els.promptsContainer.innerHTML = '<div class="error">Error: PROMPT_REGISTRY not loaded.</div>';
+        return;
+    }
+
+    for (const [key, config] of Object.entries(PROMPT_REGISTRY)) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'form-group';
+        
+        const label = document.createElement('label');
+        label.textContent = `${config.title}:`;
+        label.htmlFor = `prompt-${key}`;
+        
+        const textarea = document.createElement('textarea');
+        textarea.id = `prompt-${key}`;
+        textarea.rows = 3;
+        textarea.dataset.key = key; // for easy retrieval
+        // Value priority: Saved User Pref -> Registry Default
+        textarea.value = savedPrompts[key] || config.prompt;
+        
+        wrapper.appendChild(label);
+        wrapper.appendChild(textarea);
+        els.promptsContainer.appendChild(wrapper);
+    }
+}
+
+
+/**
  * Saves options to chrome.storage.
  */
 async function saveOptions() {
@@ -116,13 +134,15 @@ async function saveOptions() {
   const contextStrategyVal = els.contextStrategy.value;
   const vaultPass = els.vaultPassword.value;
 
-  // Prompts
-  const prompts = {
-      summarize: els.promptSummarize.value,
-      explain: els.promptExplain.value,
-      improve: els.promptImprove.value,
-      analyze: els.promptAnalyze.value
-  };
+  // Gather Prompts
+  const prompts = {};
+  const inputs = els.promptsContainer.querySelectorAll('textarea');
+  inputs.forEach(input => {
+      const key = input.dataset.key;
+      if (key) {
+          prompts[key] = input.value;
+      }
+  });
 
   showStatus("Saving...", "normal");
 
@@ -175,12 +195,12 @@ async function saveOptions() {
   }
 }
 
-function resetPrompts() {
-    els.promptSummarize.value = DEFAULT_PROMPTS.summarize;
-    els.promptExplain.value = DEFAULT_PROMPTS.explain;
-    els.promptImprove.value = DEFAULT_PROMPTS.improve;
-    els.promptAnalyze.value = DEFAULT_PROMPTS.analyze;
-    showStatus("Prompts reset to defaults. Click Save to apply.", "normal");
+function handleResetPrompts() {
+    if (confirm("Reset all prompt templates to defaults? This cannot be undone.")) {
+        // Re-render purely from registry
+        renderPrompts({});
+        showStatus("Prompts reset to defaults. Click Save to apply.", "normal");
+    }
 }
 
 function showStatus(msg, type) {

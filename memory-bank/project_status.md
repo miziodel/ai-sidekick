@@ -25,7 +25,9 @@
 - [x] **High-Contrast Alerts**: Visual feedback for system states.
 
 ### Configuration
-- [x] **Configurable Prompts**: Custom templates for context menu actions and page analysis using variables (e.g. `{{selection}}`).
+- [x] **Configurable Prompts**: 10 fully customisable templates including new actions like "Expert Critique", "Pros & Cons", and "Data Extraction".
+- [x] **Dynamic Context Menu**: The browser context menu automatically syncs with the configured prompts.
+- [x] **Hot-Reload**: Settings changes (including prompts) apply instantly without reloading the extension.
 
 ## 🟡 Known Limitations / TODOs
 - **Destructive Summarization**: When summarizing context, replace the entire history with the summary (must be detailed) to save tokens/screen space.

@@ -239,31 +239,14 @@
     </div>
 
     <div class="card">
-        <details>
             <summary><h2>Prompt Templates (Advanced)</h2></summary>
             <div class="hint" style="margin-bottom: 1rem;">
                 Customize what is sent to the AI for each action. Use variables:
                 <code>{{selection}}</code>, <code>{{content}}</code>, <code>{{url}}</code>, <code>{{title}}</code>.
             </div>
 
-            <div class="form-group">
-                <label for="prompt-summarize">Summarize Selection:</label>
-                <textarea id="prompt-summarize" rows="2"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="prompt-explain">Explain Selection:</label>
-                <textarea id="prompt-explain" rows="2"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="prompt-improve">Improve Selection:</label>
-                <textarea id="prompt-improve" rows="2"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="prompt-analyze">Analyze Page:</label>
-                <textarea id="prompt-analyze" rows="2"></textarea>
+            <div id="prompts-container">
+                <!-- Prompts will be injected here dynamically -->
             </div>
 
             <button id="reset-prompts-btn" class="secondary-btn" style="margin-top: 10px;">Reset to Defaults</button>
@@ -279,6 +262,7 @@
     </div>
 
     <script src="lib/crypto-utils.js"></script>
+    <script src="lib/prompts.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

@@ -8,15 +8,19 @@
  * Handles Context Menus and Side Panel opening.
  */
 
+importScripts('lib/action-manager.js');
+importScripts('lib/prompts.js');
 
 // Setup Context Menus on Install
 chrome.runtime.onInstalled.addListener(() => {
+  // 1. Create Root
   chrome.contextMenus.create({
     id: "ai-sidekick-root",
     title: "AI Sidekick",
     contexts: ["selection", "page"]
   });
 
+  // 2. Static Items
   chrome.contextMenus.create({
     parentId: "ai-sidekick-root",
     id: "open-sidekick",
@@ -26,40 +30,23 @@ chrome.runtime.onInstalled.addListener(() => {
 
   chrome.contextMenus.create({
     parentId: "ai-sidekick-root",
-    id: "summarize-sel",
-    title: "Summarize Selection",
-    contexts: ["selection"]
-  });
-
-  chrome.contextMenus.create({
-    parentId: "ai-sidekick-root",
-    id: "explain-sel",
-    title: "Explain This",
-    contexts: ["selection"]
-  });
-  
-  chrome.contextMenus.create({
-    parentId: "ai-sidekick-root",
-    id: "improve-sel",
-    title: "Improve Writing",
-    contexts: ["selection"]
-  });
-
-  chrome.contextMenus.create({
-    parentId: "ai-sidekick-root",
-    id: "summarize-page",
-    title: "Summarize Page",
-    contexts: ["page"]
-  });
-  chrome.contextMenus.create({
-    parentId: "ai-sidekick-root",
     id: "separator-1",
     type: "separator",
     contexts: ["all"]
   });
-});
 
-importScripts('lib/action-manager.js');
+  // 3. Dynamic Items from Registry
+  // We skip 'summarize_page' here if we want it separate or keep it mixed.
+  // Let's just iterate all.
+  for (const [key, config] of Object.entries(PROMPT_REGISTRY)) {
+      chrome.contextMenus.create({
+        parentId: "ai-sidekick-root",
+        id: key, // Use the registry key as ID
+        title: config.title,
+        contexts: config.contexts || ["selection"]
+      });
+  }
+});
 
 // Track the existing extension state (Single Instance)
 // We use chrome.storage.session so this survives Service Worker restarts.
