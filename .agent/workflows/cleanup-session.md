@@ -1,0 +1,1 @@
+/Users/mauriziowep/.gemini/antigravity/global_workflows/cleanup-session.md

@@ -11,8 +11,10 @@
 importScripts('lib/action-manager.js');
 importScripts('lib/prompts.js');
 
-// Setup Context Menus on Install
-chrome.runtime.onInstalled.addListener(() => {
+// Setup Context Menus
+async function setupContextMenus() {
+  chrome.contextMenus.removeAll();
+
   // 1. Create Root
   chrome.contextMenus.create({
     id: "ai-sidekick-root",
@@ -35,17 +37,41 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["all"]
   });
 
-  // 3. Dynamic Items from Registry
-  // We skip 'summarize_page' here if we want it separate or keep it mixed.
-  // Let's just iterate all.
-  for (const [key, config] of Object.entries(PROMPT_REGISTRY)) {
+  // 3. Dynamic Items from Storage
+  const data = await chrome.storage.local.get(['actions']);
+  let actions = data.actions;
+
+  // First Run / Clean Slate: Seed from Defaults
+  if (!actions || !Array.isArray(actions) || actions.length === 0) {
+      if (typeof DEFAULT_ACTIONS !== 'undefined') {
+          actions = DEFAULT_ACTIONS;
+          await chrome.storage.local.set({ actions: DEFAULT_ACTIONS });
+      } else {
+          console.warn("DEFAULT_ACTIONS not loaded yet.");
+          return;
+      }
+  }
+
+  // Create Menus
+  actions.forEach(action => {
       chrome.contextMenus.create({
         parentId: "ai-sidekick-root",
-        id: key, // Use the registry key as ID
-        title: config.title,
-        contexts: config.contexts || ["selection"]
+        id: action.id, 
+        title: action.title,
+        contexts: action.contexts || ["selection"]
       });
-  }
+  });
+}
+
+// Init on Startup/Install
+chrome.runtime.onInstalled.addListener(setupContextMenus);
+chrome.runtime.onStartup.addListener(setupContextMenus);
+
+// Listen for Hot-Reload (Actions Changed)
+chrome.storage.local.onChanged.addListener((changes) => {
+    if (changes.actions) {
+        setupContextMenus();
+    }
 });
 
 // Track the existing extension state (Single Instance)
@@ -55,7 +81,7 @@ let inMemoryState = null;
 async function getSidekickState() {
   // Check memory first
   if (inMemoryState) return inMemoryState;
-  
+
   // Check session storage
   try {
     const data = await chrome.storage.session.get(['sidekickState']);
@@ -64,7 +90,7 @@ async function getSidekickState() {
       return inMemoryState;
     }
   } catch (e) {
-    console.warn("Failed to read session storage", e);
+    console.warn('Failed to read session storage', e);
   }
   return null;
 }
@@ -74,11 +100,13 @@ async function setSidekickState(windowId, tabId) {
   inMemoryState = { windowId, tabId };
   try {
     if (windowId) {
-       await chrome.storage.session.set({ sidekickState: { windowId, tabId } });
+      await chrome.storage.session.set({ sidekickState: { windowId, tabId } });
     } else {
-       await chrome.storage.session.remove('sidekickState');
+      await chrome.storage.session.remove('sidekickState');
     }
-  } catch(e) { console.error("Failed to save Sidekick State", e); }
+  } catch (e) {
+    console.error('Failed to save Sidekick State', e);
+  }
 }
 
 // Cleanup OR Migration when window is closed
@@ -90,140 +118,142 @@ chrome.windows.onRemoved.addListener(async (windowId) => {
   if (currentState && currentState.windowId === windowId) {
     // Check if the tab survived (Migration)
     if (currentState.tabId) {
-       try {
-         const tab = await chrome.tabs.get(currentState.tabId);
-         if (tab && tab.id === currentState.tabId) {
-            // Update state to point to the new window
-            setSidekickState(tab.windowId, tab.id);
-            return;
-         }
-       } catch(e) {
-         // Tab likely died with window, proceed to clear
-       }
+      try {
+        const tab = await chrome.tabs.get(currentState.tabId);
+        if (tab && tab.id === currentState.tabId) {
+          // Update state to point to the new window
+          setSidekickState(tab.windowId, tab.id);
+          return;
+        }
+      } catch (e) {
+        // Tab likely died with window, proceed to clear
+      }
     }
-    
+
     setSidekickState(null, null);
   }
 });
 
 // Helper to open the extension logic
-async function openExtension(tab) {
+async function openExtension(_tab) {
   const state = await getSidekickState();
   const trackedId = state ? state.windowId : null;
-  
-  let targetTab = null;
 
+  let targetTab = null;
   // 1. Try to find an existing extension instance (Tab or Window)
-  
+
   if (trackedId) {
     try {
-       const win = await chrome.windows.get(trackedId, { populate: true });
-       if (win.tabs) {
-         const trackedTabId = state ? state.tabId : null;
-         
-         // 1. GOLDEN PATH: We know the exact Tab ID we want.
-         if (trackedTabId) {
-             targetTab = win.tabs.find(t => t.id === trackedTabId);
-         }
+      const win = await chrome.windows.get(trackedId, { populate: true });
+      if (win.tabs) {
+        const trackedTabId = state ? state.tabId : null;
 
-         // 2. URL / Title Match (if Tab ID match failed or wasn't tracked)
-         if (!targetTab) {
-             targetTab = win.tabs.find(t => 
-                 (t.url && t.url.includes("sidepanel.html")) || 
-                 t.title === "AI Sidekick"
-             );
-         }
-         
-         // 3. Fallback: Adopting ACTIVE tab in tracked window.
-         if (!targetTab) {
-             targetTab = win.tabs.find(t => t.active) || win.tabs[0];
-         }
-       }
-    } catch(e) {
-       // We don't clear state here immediately, just let it fall through.
+        // 1. GOLDEN PATH: We know the exact Tab ID we want.
+        if (trackedTabId) {
+          targetTab = win.tabs.find((t) => t.id === trackedTabId);
+        }
+
+        // 2. URL / Title Match (if Tab ID match failed or wasn't tracked)
+        if (!targetTab) {
+          targetTab = win.tabs.find(
+            (t) => (t.url && t.url.includes('sidepanel.html')) || t.title === 'AI Sidekick',
+          );
+        }
+
+        // 3. Fallback: Adopting ACTIVE tab in tracked window.
+        // 3. Fallback: Adopting ACTIVE tab in tracked window.
+        if (!targetTab) {
+          targetTab = win.tabs.find((t) => t.active) || win.tabs[0];
+        }
+      }
+    } catch (e) {
+      // We don't clear state here immediately, just let it fall through.
     }
   }
 
+
+
   // If we haven't pinpointed a tab yet, do a global search
   if (!targetTab) {
-     const allTabs = await chrome.tabs.query({});
-     
-     // Match by URL or Title
-     targetTab = allTabs.find(t => 
-        (t.url && t.url.includes("sidepanel.html")) ||
-        t.title === "AI Sidekick"
-     );
-     
-     if (targetTab) {
-       setSidekickState(targetTab.windowId, targetTab.id);
-     }
+    const allTabs = await chrome.tabs.query({});
+
+    // Match by URL or Title
+    targetTab = allTabs.find(
+      (t) => (t.url && t.url.includes('sidepanel.html')) || t.title === 'AI Sidekick',
+    );
+
+    if (targetTab) {
+      setSidekickState(targetTab.windowId, targetTab.id);
+    }
   }
 
   // 2. DISPATCH or CREATE
   let focused = false;
 
   if (targetTab) {
-     // Update State to ensure we have the Tab ID tracked (Migration Fix)
-     setSidekickState(targetTab.windowId, targetTab.id);
-     
-     // A. EXISTING found -> Liveness Check & Focus
-     try {
-       // 1. LIVENESS CHECK (Ping)
-       await chrome.tabs.sendMessage(targetTab.id, { type: 'PING' });
-       
-       // 2. If Alive, Focus it
-       await chrome.windows.update(targetTab.windowId, { focused: true });
-       await chrome.tabs.update(targetTab.id, { active: true });
-       
-       // 3. Send Pending Action (if any)
-       const pending = await ActionManager.getPendingAction(false); 
-       if (pending) {
-          chrome.tabs.sendMessage(targetTab.id, { type: 'EXECUTE_ACTION', data: pending })
-            .then(() => {
-                ActionManager.getPendingAction(true); 
-            })
-            .catch(err => {
-                console.warn("Action send failed despite Ping success?", err);
-            });
-       }
-       focused = true; 
-     } catch (e) {
-       console.error("Tab DEAD/ZOMBIE or Focus Failed. Fallback to create.", e);
-       setSidekickState(null, null); 
-     }
+    // Update State to ensure we have the Tab ID tracked (Migration Fix)
+    setSidekickState(targetTab.windowId, targetTab.id);
+
+    // A. EXISTING found -> Liveness Check & Focus
+    try {
+      // 1. LIVENESS CHECK (Ping)
+      await chrome.tabs.sendMessage(targetTab.id, { type: 'PING' });
+
+      // 2. If Alive, Focus it
+      await chrome.windows.update(targetTab.windowId, { focused: true });
+      await chrome.tabs.update(targetTab.id, { active: true });
+
+      // 3. Send Pending Action (if any)
+      const pending = await ActionManager.getPendingAction(false);
+
+      if (pending) {
+        chrome.tabs
+          .sendMessage(targetTab.id, { type: 'EXECUTE_ACTION', data: pending })
+          .then(() => {
+            ActionManager.getPendingAction(true);
+          })
+          .catch((err) => {
+            console.warn('Action send failed despite Ping success?', err);
+          });
+      }
+      focused = true;
+    } catch (e) {
+      console.error('Tab DEAD/ZOMBIE or Focus Failed. Fallback to create.', e);
+      setSidekickState(null, null);
+    }
   }
 
   // B. Fallback: Create New Popup if no tab was found OR if focus failed
   if (!focused) {
     try {
-        const newWin = await chrome.windows.create({
-        url: "sidepanel.html",
-        type: "popup",
+      const newWin = await chrome.windows.create({
+        url: 'sidepanel.html',
+        type: 'popup',
         width: 400,
-        height: 600
+        height: 600,
       });
       if (newWin) {
         // Track both Window AND Tab ID (if available)
-        const newTabId = (newWin.tabs && newWin.tabs[0]) ? newWin.tabs[0].id : null;
+        const newTabId = newWin.tabs && newWin.tabs[0] ? newWin.tabs[0].id : null;
         setSidekickState(newWin.id, newTabId);
       }
     } catch (createErr) {
-      console.error("Failed to create popup window:", createErr);
+      console.error('Failed to create popup window:', createErr);
     }
   }
 }
 
 // Handle Extension Icon Click (Action) -> OPEN OPTIONS
-chrome.action.onClicked.addListener((tab) => {
+chrome.action.onClicked.addListener((_tab) => {
   chrome.runtime.openOptionsPage();
 });
 
 // Handle Context Menu Clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   // Determine action type
-  let actionType = "contextMenu";
-  if (info.menuItemId === "open-sidekick") {
-     actionType = "openOnly";
+  let actionType = 'contextMenu';
+  if (info.menuItemId === 'open-sidekick') {
+    actionType = 'openOnly';
   }
 
   // 1. Always save pending action (Unified path)
@@ -233,7 +263,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     menuItemId: info.menuItemId,
     selectionText: info.selectionText,
     pageUrl: info.pageUrl,
-    tabId: tab ? tab.id : null
+    tabId: tab ? tab.id : null,
   });
 
   // 2. Open UI (with single instance check)

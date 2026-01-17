@@ -1,4 +1,3 @@
-
 # Lessons Learned: AI Sidekick Development
 
 ## 1. Browser Compatibility: The "Arc Factor"
@@ -40,6 +39,7 @@ Developing for Arc Browser requires specific considerations compared to standard
     4. Pass data via storage, not ephemeral messages, for critical startup actions.
 
 ## 7. Service Worker Environment
+
 - **Gotcha**: `window` is not defined in Manifest V3 background scripts (Service Workers).
 - **Fix**: Library code shared between UI and Background must check for `self` vs `window`:
   ```javascript
@@ -122,6 +122,13 @@ Developing for Arc Browser requires specific considerations compared to standard
     - Use `chrome.storage.local.onChanged` in the sidepanel/popup script.
     - Since this listener is passive, it costs **zero resources** when idle.
     - This creates a "native app" feel where configuration changes on one screen (Options) instantly reflect on another (Side Panel).
+
+## 19. Chrome Storage Change Objects (Deep Debugging)
+- **Issue**: Implementing Hot-Reload for `actions` caused a crash where `state.actions` became `undefined`.
+- **Cause**: The `chrome.storage.onChanged` listener provides a `changes` object where keys map to `StorageChange` objects.
+  - **Incorrect**: `changes.newValue` (This property doesn't exist on the root object).
+  - **Correct**: `changes[key].newValue` (e.g., `changes.actions.newValue`).
+- **Lesson**: When refactoring or copying hot-reload logic, always verify the object path. The root object is a map of keys, not the change object itself. "Undefined" errors in listeners often mean you are accessing the change wrapper incorrectly.
 
 ## Current Status
 - **Core**: Stable.

@@ -239,18 +239,18 @@
     </div>
 
     <div class="card">
-            <summary><h2>Prompt Templates (Advanced)</h2></summary>
-            <div class="hint" style="margin-bottom: 1rem;">
-                Customize what is sent to the AI for each action. Use variables:
-                <code>{{selection}}</code>, <code>{{content}}</code>, <code>{{url}}</code>, <code>{{title}}</code>.
-            </div>
+        <h2>Custom Actions</h2>
+        <div class="hint" style="margin-bottom: 1rem;">
+            Define the actions available in the Context Menu. Use variables:
+            <code>{{selection}}</code>, <code>{{content}}</code>, <code>{{url}}</code>, <code>{{title}}</code>.
+        </div>
 
-            <div id="prompts-container">
-                <!-- Prompts will be injected here dynamically -->
-            </div>
+        <div id="actions-list">
+            <!-- Actions will be injected here -->
+        </div>
 
-            <button id="reset-prompts-btn" class="secondary-btn" style="margin-top: 10px;">Reset to Defaults</button>
-        </details>
+        <button id="add-action-btn" class="secondary" style="margin-top: 10px; width: 100%; border-style: dashed;">+ Add Custom Action</button>
+        <button id="reset-actions-btn" class="secondary" style="margin-top: 10px; color: var(--danger); border-color: var(--danger);">Reset to Defaults</button>
     </div>
 
       <button id="save-btn">Save Settings</button>

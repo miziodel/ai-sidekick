@@ -5,7 +5,7 @@
 
 /**
  * OPTIONS LOGIC
- * Handles saving/loading settings and managing the secure vault.
+ * Handles saving/loading settings, managing the secure vault, and dynamic Actions CRUD.
  */
 
 // UI Elements
@@ -21,19 +21,22 @@ const els = {
   vaultSetup: document.getElementById('vault-setup'),
   vaultPassword: document.getElementById('vault-password'),
   storageHint: document.getElementById('storage-hint'),
-  // Prompts Container
-  promptsContainer: document.getElementById('prompts-container'),
-  resetPromptsBtn: document.getElementById('reset-prompts-btn')
+  // Actions
+  actionsList: document.getElementById('actions-list'),
+  addActionBtn: document.getElementById('add-action-btn'),
+  resetActionsBtn: document.getElementById('reset-actions-btn')
 };
 
-let currentMode = 'local'; // 'local' or 'vault'
+let currentMode = 'local';
+let currentActions = []; // Array of { id, title, prompt, contexts }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', restoreOptions);
 els.saveBtn.addEventListener('click', saveOptions);
 els.btnLocal.addEventListener('click', () => setMode('local'));
 els.btnVault.addEventListener('click', () => setMode('vault'));
-els.resetPromptsBtn.addEventListener('click', handleResetPrompts);
+els.addActionBtn.addEventListener('click', addNewAction);
+els.resetActionsBtn.addEventListener('click', handleResetActions);
 
 function setMode(mode) {
   currentMode = mode;
@@ -51,35 +54,27 @@ function setMode(mode) {
 }
 
 /**
- * Restores select box and checkbox state using the preferences
- * stored in chrome.storage.
+ * Restore Options
  */
 function restoreOptions() {
   chrome.storage.local.get(
-    ['geminiKey', 'deepseekKey', 'storageMode', 'systemInstruction', 'contextStrategy', 'prompts'],
+    ['geminiKey', 'deepseekKey', 'storageMode', 'systemInstruction', 'contextStrategy', 'actions'],
     (localData) => {
-      // Restore Context Strategy
-      if (localData.contextStrategy) {
-        els.contextStrategy.value = localData.contextStrategy;
-      } else {
-        els.contextStrategy.value = 'auto'; // Default
+      // 1. General Settings
+      if (localData.contextStrategy) els.contextStrategy.value = localData.contextStrategy;
+      if (localData.systemInstruction) els.systemInstruction.value = localData.systemInstruction;
+
+      // 2. Actions (Storage First -> Default fallback)
+      if (localData.actions && Array.isArray(localData.actions)) {
+          currentActions = localData.actions;
+      } else if (typeof DEFAULT_ACTIONS !== 'undefined') {
+          currentActions = JSON.parse(JSON.stringify(DEFAULT_ACTIONS)); // Deep copy
       }
+      renderActions();
 
-      // Restore System Instruction (always local for convenience, not sensitive)
-      if (localData.systemInstruction) {
-        els.systemInstruction.value = localData.systemInstruction;
-      }
-
-      // Restore Prompts (Render Dynamically)
-      renderPrompts(localData.prompts || {});
-
-      // Check storage mode
+      // 3. Storage Mode
       if (localData.storageMode === 'vault') {
         setMode('vault');
-        // If in vault mode, we can't show keys unless we are unlocked.
-        // For options page simplification, we just show empty placeholders
-        // or we could check session storage if we wanted to show them.
-        // Here we just leave them empty to indicate "Secure".
         els.geminiKey.placeholder = "(Encrypted in Vault)";
         els.deepseekKey.placeholder = "(Encrypted in Vault)";
       } else {
@@ -92,37 +87,78 @@ function restoreOptions() {
 }
 
 /**
- * Render Prompt Inputs dynamically based on PROMPT_REGISTRY
+ * Render the List of Actions
  */
-function renderPrompts(savedPrompts) {
-    els.promptsContainer.innerHTML = ''; // Clear
+function renderActions() {
+    els.actionsList.innerHTML = '';
+    
+    currentActions.forEach((action, index) => {
+         const row = document.createElement('div');
+         row.className = 'card'; 
+         row.style.padding = '15px';
+         row.style.marginBottom = '10px';
+         row.style.border = '1px solid #eee';
+         row.dataset.id = action.id;
 
-    if (typeof PROMPT_REGISTRY === 'undefined') {
-        els.promptsContainer.innerHTML = '<div class="error">Error: PROMPT_REGISTRY not loaded.</div>';
-        return;
-    }
+         row.innerHTML = `
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                <input type="text" class="action-title" value="${escapeHtml(action.title)}" placeholder="Title" style="flex: 2; font-weight: bold;">
+                <select class="action-context" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                    <option value="selection" ${action.contexts && action.contexts.includes('selection') && !action.contexts.includes('page') ? 'selected' : ''}>Selection Only</option>
+                    <option value="page" ${action.contexts && action.contexts.includes('page') && !action.contexts.includes('selection') ? 'selected' : ''}>Page Only</option>
+                    <option value="both" ${action.contexts && action.contexts.includes('selection') && action.contexts.includes('page') ? 'selected' : ''}>Both</option>
+                </select>
+                <button class="delete-btn" style="background: #ff453a; padding: 8px 12px; font-size: 12px;">Delete</button>
+            </div>
+            <textarea class="action-prompt" rows="2" placeholder="Prompt... Use {{selection}} or {{url}}">${escapeHtml(action.prompt)}</textarea>
+            <div class="hint" style="margin-top: 5px;">ID: ${action.id}</div>
+         `;
+         
+         // Bind Delete
+         row.querySelector('.delete-btn').addEventListener('click', () => {
+             if (confirm(`Delete action "${action.title}"?`)) {
+                 currentActions.splice(index, 1);
+                 renderActions();
+             }
+         });
+         
+         // Bind Inputs to Array State (Active syncing)
+         // Actually, simpler to read ALL from DOM on save. 
+         // But "Delete" needs array index. 
+         // Hybrid: Rendering is destructive, so we just init from array.
+         // On "Save", we scrape the DOM to rebuild array.
 
-    for (const [key, config] of Object.entries(PROMPT_REGISTRY)) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'form-group';
-        
-        const label = document.createElement('label');
-        label.textContent = `${config.title}:`;
-        label.htmlFor = `prompt-${key}`;
-        
-        const textarea = document.createElement('textarea');
-        textarea.id = `prompt-${key}`;
-        textarea.rows = 3;
-        textarea.dataset.key = key; // for easy retrieval
-        // Value priority: Saved User Pref -> Registry Default
-        textarea.value = savedPrompts[key] || config.prompt;
-        
-        wrapper.appendChild(label);
-        wrapper.appendChild(textarea);
-        els.promptsContainer.appendChild(wrapper);
-    }
+         els.actionsList.appendChild(row);
+    });
 }
 
+function addNewAction() {
+    const id = 'custom_' + Date.now();
+    currentActions.push({
+        id: id,
+        title: "New Action",
+        contexts: ["selection"],
+        prompt: "Analyze this: {{selection}}"
+    });
+    renderActions();
+    // Scroll to bottom
+    setTimeout(() => {
+        els.actionsList.scrollTop = els.actionsList.scrollHeight;
+    }, 100);
+}
+
+function handleResetActions() {
+    if (confirm("Reset all actions to defaults? Custom actions will be lost.")) {
+         if (typeof DEFAULT_ACTIONS === 'undefined') {
+            els.actionsList.innerHTML = '<div class="error">Error: DEFAULT_ACTIONS not loaded.</div>'; // Changed from promptsContainer to actionsList
+            return;
+        }
+
+        currentActions = JSON.parse(JSON.stringify(DEFAULT_ACTIONS)); // Deep copy
+        renderActions();
+        showStatus("Reset to memory. Click SAVE to persist.", "normal");
+    }
+}
 
 /**
  * Saves options to chrome.storage.
@@ -134,60 +170,56 @@ async function saveOptions() {
   const contextStrategyVal = els.contextStrategy.value;
   const vaultPass = els.vaultPassword.value;
 
-  // Gather Prompts
-  const prompts = {};
-  const inputs = els.promptsContainer.querySelectorAll('textarea');
-  inputs.forEach(input => {
-      const key = input.dataset.key;
-      if (key) {
-          prompts[key] = input.value;
+  // 1. Scrape Actions from DOM
+  const newActions = [];
+  const rows = els.actionsList.querySelectorAll('.card'); 
+  
+  rows.forEach(row => {
+      const id = row.dataset.id;
+      const title = row.querySelector('.action-title').value.trim();
+      const prompt = row.querySelector('.action-prompt').value;
+      const contextVal = row.querySelector('.action-context').value;
+      
+      let contexts = ['selection'];
+      if (contextVal === 'page') contexts = ['page'];
+      if (contextVal === 'both') contexts = ['selection', 'page'];
+      
+      if (title && prompt) {
+        newActions.push({ id, title, prompt, contexts });
       }
   });
+  
+  // Update in-memory
+  currentActions = newActions;
 
   showStatus("Saving...", "normal");
 
   try {
-    // Save System Instruction (always unencrypted local)
+    // Save to Storage
     await chrome.storage.local.set({ 
       systemInstruction: instructionVal,
       contextStrategy: contextStrategyVal,
       storageMode: currentMode,
-      prompts: prompts
+      actions: newActions // THIS TRIGGERS HOT-RELOAD IN BACKGROUND & SIDEPANEL
     });
 
     if (currentMode === 'local') {
-      // Save cleartext keys locally
       await chrome.storage.local.set({
         geminiKey: geminiVal,
         deepseekKey: deepseekVal
       });
-      // Clear any sync vault data to avoid confusion
       await chrome.storage.sync.remove('vault');
-      await chrome.storage.session.remove('decryptedKeys'); // Clear any active session
+      await chrome.storage.session.remove('decryptedKeys');
     } else {
-      // VAULT MODE
-      if (!vaultPass) {
-        throw new Error("Master Password is required for Cloud Vault.");
-      }
-      
-      const dataToEncrypt = JSON.stringify({
-        geminiKey: geminiVal,
-        deepseekKey: deepseekVal
-      });
-
+      if (!vaultPass) throw new Error("Master Password is required.");
+      const dataToEncrypt = JSON.stringify({ geminiKey: geminiVal, deepseekKey: deepseekVal });
       const vault = await window.CryptoUtils.encryptVault(dataToEncrypt, vaultPass);
-      
-      // Save vault to sync
       await chrome.storage.sync.set({ vault: vault });
-      
-      // Clear local keys for security
       await chrome.storage.local.remove(['geminiKey', 'deepseekKey']);
     }
 
-    showStatus("Options saved successfully.", "success");
-    setTimeout(() => {
-      showStatus("", "");
-    }, 2000);
+    showStatus("Options saved. Context menu updated.", "success");
+    setTimeout(() => showStatus("", ""), 2000);
 
   } catch (error) {
     console.error(error);
@@ -195,12 +227,15 @@ async function saveOptions() {
   }
 }
 
-function handleResetPrompts() {
-    if (confirm("Reset all prompt templates to defaults? This cannot be undone.")) {
-        // Re-render purely from registry
-        renderPrompts({});
-        showStatus("Prompts reset to defaults. Click Save to apply.", "normal");
-    }
+// Utils
+function escapeHtml(text) {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function showStatus(msg, type) {

@@ -25,7 +25,7 @@
 - [x] **High-Contrast Alerts**: Visual feedback for system states.
 
 ### Configuration
-- [x] **Configurable Prompts**: 10 fully customisable templates including new actions like "Expert Critique", "Pros & Cons", and "Data Extraction".
+- [x] **Custom Actions System**: Full CRUD (Create/Read/Update/Delete) for context menu actions. Supports dynamic prompts and context selection (Page vs Selection).
 - [x] **Dynamic Context Menu**: The browser context menu automatically syncs with the configured prompts.
 - [x] **Hot-Reload**: Settings changes (including prompts) apply instantly without reloading the extension.
 
