@@ -5,13 +5,15 @@
 
 ### Current Goals
 1.  Establish `.agent/rules` (Done).
-2.  Migrate Documentation to `docs/` (In Progress).
-3.  Move code to `src/` (Planned).
+2.  Migrate Documentation to `docs/` (Done).
+3.  Implement robust Arc Browser Single-Instance logic (Done).
+4.  Standardize Source Code to `src/` (In Progress).
 
 ## Recent Changes
-- Created `00-arc-expert-identity.md` and `01-tech-constraints.md`.
-- Split `project_status.md` into `docs/status.md`, `docs/changelog.md`, and `docs/roadmap.md`.
-- Migrated lessons learned to `docs/knowledge-base.md`.
+- Fixed Arc Toolbar Icon dimensions via `styles.css` CSS forcing (400x600px).
+- Implemented `chrome.storage.session` for resilient window tracking in Arc.
+- Added UI Context Bar and "Open Sidekick Here" menu action.
+- Integrated ESLint into the build pipeline.
 
 ## Active Questions
 - Will the `src/` move break `manifest.json` paths? (Mitigation: `tests/audit_paths.js` planned).

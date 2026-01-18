@@ -8,7 +8,7 @@
     "format": "prettier --write .",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "node tests/run_tests.js",
-    "test:integration": "node tests/repro_vault_flow.js"
+    "test:integration": "node tests/integration_sidepanel.js"
   },
   "author": "Maurizio Delmonte",
   "license": "MIT",

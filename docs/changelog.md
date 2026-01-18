@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 - **Multi-Model Support**: Integrated Gemini 1.5 Flash/Pro and DeepSeek V3/R1.
 - **Client-Side Encryption**: Implemented `CryptoUtils` class for PBKDF2 + AES-GCM local key storage.
 - **Arc Browser Support**:
+    - **[Implemented]** **Single Instance Window**: Added logic to `background.js` using `chrome.storage.session` to track and focus the existing extension window, preventing duplicates.
+    - **[Added]** **UI Context Bar**: Visual indicator of the active page URL being analyzed in the Side Panel/Popup.
+    - **[Added]** **Open Sidekick Here**: New context menu item to initialize context without triggering a prompt.
     - "Little Arc" migration tracking.
     - Title-based tab discovery fallback.
     - Split View compatibility buttons.
@@ -23,11 +26,17 @@ All notable changes to this project will be documented in this file.
 - **Configuration**:
     - Hot-Reload of settings.
     - Dynamic Context Menu actions (Crud).
+- **Security Hardening**:
+    - **Session-Based Storage**: Integrated `chrome.storage.session` to persist decrypted keys across sidepanel sessions.
+    - **Auto-Lock**: Implemented a 15-minute inactivity timer that automatically locks the vault.
+    - **XSS Mitigation**: Added HTML sanitization for LLM output to prevent script injection.
+    - **Deferred Actions**: Implemented context menu action queuing to handle "Vault Locked" states gracefully.
 
 ### Security
 - **CSP Compliance**: Removed all remote script references; vendored necessary libraries.
 - **Zero Backend**: All AI calls go directly from client to API.
 
 ### Fixed
+- **Narrow Toolbar Popup**: Resolved issue in Arc Browser by forcing minimum dimensions (400x600px) in `styles.css` and reverting to `default_popup` for stability.
 - **Context Limit**: Implemented "Sliding Window" (last 10 messages) to prevent `400 Bad Request` on long chats.
-- **Context Menu Race Condition**: Fixed `Unchecked runtime.lastError: duplicate id` by implementing a mutex lock to prevent recursive setup calls and adding robust error suppression.
+- **Context Menu Race Condition**: Fixed `Unchecked runtime.lastError: duplicate id` by implementing a mutex lock and robust error suppression.

@@ -6,6 +6,9 @@
 - [x] **Multi-Model Support**: Gemini 1.5 Flash/Pro (002) and DeepSeek V3/R1.
 - [x] **Streaming**: Real-time token streaming for all API models.
 - [x] **Secure Vault**: PBKDF2 + AES-GCM client-side encryption for API keys.
+- [x] **Session Persistence**: `chrome.storage.session` integration for transient key storage.
+- [x] **Auto-Lock**: 15-minute inactivity timer for vault security.
+- [x] **XSS Protection**: HTML sanitization for LLM output.
 - [x] **Web Mode Fallback**: Direct link to `gemini.google.com` for free usage.
 
 ### Memory & Context
