@@ -1,11 +1,18 @@
 # AI Sidekick - Chrome Extension
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-v1.0.2-green.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-v1.0.2-green.svg) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/miziodel/ai-sidekick?color=blue&label=Latest%20Download)](https://github.com/miziodel/ai-sidekick/releases/latest)
 
 
 AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM chat (Gemini & DeepSeek) and contextual analysis to your browser side panel.
 
 > 🟢 **Status:** v1.0.2 | **Beta** - Core features largely implemented and stable.
+
+## 🚀 Quick Install
+
+**Non-technical user?**
+1. [**Download the latest .zip**](https://github.com/miziodel/ai-sidekick/releases/latest) from the Releases page.
+2. Follow the 30-second [Setup Guide](#-setup) to load it into your browser.
+
 
 
 ## 🎯 Key Features
@@ -28,10 +35,12 @@ AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM 
 - **Vendor-ing**: `marked.js` is included locally to respect CSP (Content Security Policy).
 - **Testing**: Pure logic (formatting, crypto) is separated from UI logic for easy Node.js testing.
 
-## 🚀 Setup
+## 🏁 Setup
 
-1. Clone/Download this repo.
-2. Run `npm install` (optional, mostly for testing scripts).
+1. **Get the Code**:
+   - **User**: [Download the Latest ZIP](https://github.com/miziodel/ai-sidekick/releases/latest) and extract it.
+   - **Developer**: Clone this repo and run `npm install`.
+
 3. Open `chrome://extensions`.
 4. Enable "Developer Mode".
 5. Click "Load Unpacked" -> Select this folder.
