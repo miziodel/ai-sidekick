@@ -42,3 +42,7 @@
 - [x] **Split View Compatible**: "Open in Tab" button allows opening chat in a standard tab for Arc Split View.
 - [x] **Context Awareness**: "Open Sidekick Here" menu item allows setting context without triggering a prompt.
 - [x] **UI Context Bar**: Visual indicator of the active page URL being analyzed.
+
+### Source Control
+- [x] **GitHub Integration**: Repository pushed to `miziodel/ai-sidekick`.
+- [x] **Safe Cleanups**: Session cleanup workflow available.

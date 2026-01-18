@@ -41,6 +41,7 @@ All notable changes to this project will be documented in this file.
     - **Deferred Actions**: Implemented context menu action queuing to handle "Vault Locked" states gracefully.
 
 ### Security
+- **GitHub**: Repository initialized and pushed to `miziodel/ai-sidekick`.
 - **CSP Compliance**: Removed all remote script references; vendored necessary libraries.
 - **Zero Backend**: All AI calls go directly from client to API.
 
