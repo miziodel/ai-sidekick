@@ -1,12 +1,14 @@
 {
   "name": "ai-sidekick",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Multi-LLM Side Panel Chrome Extension",
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "test": "node tests/run_tests.js"
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "node tests/run_tests.js",
+    "test:integration": "node tests/repro_vault_flow.js"
   },
   "author": "Maurizio Delmonte",
   "license": "MIT",

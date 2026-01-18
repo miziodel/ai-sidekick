@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.0.1] - 2026-01-18
 
 ### Added
 - **Antigravity Structure**: Established `.agent/rules` and strict project identity.

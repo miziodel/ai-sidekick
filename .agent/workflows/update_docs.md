@@ -16,7 +16,7 @@ Trigger this workflow after completing a significant task or task phase.
     -   Example: `- **[Refactor]** Moved logic files to `src/lib/` (logic.js).`
 
 3.  **Update `docs/roadmap.md`**:
-    -   Mark completed items with `[x]`.
+    -   Mark completed items with `[x]`, and remove what is already tracked in `docs/changelog.md`.
     -   Add new discovered requirements.
 
 4.  **Update `docs/context.md`**:

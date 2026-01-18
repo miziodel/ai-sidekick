@@ -115,7 +115,7 @@ global.document = {
   createElement: (tag) => ({ className: '', appendChild: () => {}, classList: { add: () => {} } }),
 };
 global.window = {
-  Logic: require('../lib/logic.js'),
+  Logic: require('../src/lib/logic.js'),
   CryptoUtils: {
     decryptVault: async (vault, pass) => {
       if (pass === 'wrong') throw new Error('Bad pass');
@@ -145,7 +145,7 @@ async function runTests() {
   // For this test, we might just copy the logic we want to test or eval it.
   // Let's try reading the file and eval-ing it in this context.
 
-  const sidepanelCode = fs.readFileSync(path.join(__dirname, '../sidepanel.js'), 'utf8');
+  const sidepanelCode = fs.readFileSync(path.join(__dirname, '../src/sidepanel.js'), 'utf8');
 
   // TEST 1: Session Persistence Check (Expect Failure currently)
   try {

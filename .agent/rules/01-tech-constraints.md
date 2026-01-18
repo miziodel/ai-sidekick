@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Technical Constraints & Standards
 
 ## 1. Technology Stack

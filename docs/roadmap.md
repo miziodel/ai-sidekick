@@ -17,4 +17,4 @@
 - [ ] **DeepSeek Reasoning**: Parse `<think>` tags from DeepSeek R1 to visually separate reasoning steps from the final answer.
 
 ### Technical Debt
-- [ ] **Regression Testing**: Integrate `repro_vault_flow.js` into the main `npm test` suite.
+- [x] **Regression Testing**: Integrate `repro_vault_flow.js` into the main `npm test` suite.
