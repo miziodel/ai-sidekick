@@ -19,6 +19,12 @@ All notable changes to this project will be documented in this file.
     - "Little Arc" migration tracking.
     - Title-based tab discovery fallback.
     - Split View compatibility buttons.
+- **Memory & Context**:
+    - **Context Strategy**: Implemented configurable strategy (Auto, URL-only, Full-text) via settings.
+    - **Security Restriction Fallback**: Implemented graceful fallback to URL-only analysis for restricted browser pages.
+    - **Hidden Context**: Decoupled AI prompt from user UI to keep chat history clean during page analysis.
+    - **Sliding Window**: Context limited to the last 10 messages to prevent token overflow.
+    - **Yellow Toast**: Persistent notifications for memory pruning and status alerts.
 - **UI System**:
     - "Arc-style" minimalist design.
     - Persistent "Yellow Toast" notifications for context pruning.
