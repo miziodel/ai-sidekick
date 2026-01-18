@@ -24,8 +24,10 @@ All notable changes to this project will be documented in this file.
     - Persistent "Yellow Toast" notifications for context pruning.
     - Markdown rendering with vendored `marked.js`.
 - **Configuration**:
-    - Hot-Reload of settings.
-    - Dynamic Context Menu actions (Crud).
+    - **Configurable Prompts**: Implemented flexible template system using `{{selection}}`, `{{content}}`, `{{url}}`, and `{{title}}` variables.
+    - **Custom Actions System**: Full CRUD for context menu actions.
+    - **Model Persistence**: Dropdown selection now persists across sidepanel sessions and extension restarts.
+    - **Hot-Reload**: Settings changes apply instantly.
 - **Security Hardening**:
     - **Session-Based Storage**: Integrated `chrome.storage.session` to persist decrypted keys across sidepanel sessions.
     - **Auto-Lock**: Implemented a 15-minute inactivity timer that automatically locks the vault.

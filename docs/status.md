@@ -22,6 +22,8 @@
 - [x] **Tooltips**: Comprehensive coverage for all icon buttons.
 - [x] **Markdown Rendering**: Safe rendering via `marked.js` (vendored).
 - [x] **Toast Notifications**: Interactive, dismissible alerts.
+- [x] **Model Persistence**: Explicitly saves and restores the selected LLM model in the dropdown.
+
 
 ### Accessibility
 - [x] **Keyboard support**: Enter to send (Shift+Enter for newline).
