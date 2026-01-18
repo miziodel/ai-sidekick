@@ -18,21 +18,21 @@
     "https://api.deepseek.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "side_panel": {
-    "default_path": "sidepanel.html"
+    "default_path": "src/sidepanel.html"
   },
   "action": {
     "default_title": "Open AI Sidekick"
   },
   "options_ui": {
-    "page": "options.html",
+    "page": "src/options.html",
     "open_in_tab": true
   },
   "icons": {
-    "16": "images/icon-16.png",
-    "48": "images/icon-48.png",
-    "128": "images/icon-128.png"
+    "16": "src/images/icon-16.png",
+    "48": "src/images/icon-48.png",
+    "128": "src/images/icon-128.png"
   }
 }

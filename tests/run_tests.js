@@ -15,9 +15,9 @@ if (!global.crypto) {
 global.window = {};
 
 // Import libraries
-const Logic = require('../lib/logic.js');
-const CryptoUtils = require('../lib/crypto-utils.js');
-const ActionManager = require('../lib/action-manager.js');
+const Logic = require('../src/lib/logic.js');
+const CryptoUtils = require('../src/lib/crypto-utils.js');
+const ActionManager = require('../src/lib/action-manager.js');
 
 async function runTests() {
   console.log('🧪 Starting Automated Tests...');

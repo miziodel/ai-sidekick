@@ -1,4 +1,4 @@
-# Lessons Learned: AI Sidekick Development
+# Knowledge Base (Lessons Learned)
 
 ## 1. Browser Compatibility: The "Arc Factor"
 Developing for Arc Browser requires specific considerations compared to standard Chrome.
@@ -129,8 +129,3 @@ Developing for Arc Browser requires specific considerations compared to standard
   - **Incorrect**: `changes.newValue` (This property doesn't exist on the root object).
   - **Correct**: `changes[key].newValue` (e.g., `changes.actions.newValue`).
 - **Lesson**: When refactoring or copying hot-reload logic, always verify the object path. The root object is a map of keys, not the change object itself. "Undefined" errors in listeners often mean you are accessing the change wrapper incorrectly.
-
-## Current Status
-- **Core**: Stable.
-- **UI**: Functional draft.
-- **Licensing**: Implemented (MIT).

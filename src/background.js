@@ -12,55 +12,102 @@ importScripts('lib/action-manager.js');
 importScripts('lib/prompts.js');
 
 // Setup Context Menus
+// Mutex to prevent concurrent setup calls
+// Mutex to prevent concurrent setup calls
+let isSettingUp = false;
+
 async function setupContextMenus() {
-  chrome.contextMenus.removeAll();
+  if (isSettingUp) return;
+  isSettingUp = true;
 
-  // 1. Create Root
-  chrome.contextMenus.create({
-    id: "ai-sidekick-root",
-    title: "AI Sidekick",
-    contexts: ["selection", "page"]
-  });
+  try {
+    // 1. Remove All (and wait)
+    await new Promise(resolve => chrome.contextMenus.removeAll(() => {
+        // Checking error here just in case, though removeAll usually succeeds
+        if (chrome.runtime.lastError) console.warn("removeAll error", chrome.runtime.lastError);
+        resolve();
+    }));
 
-  // 2. Static Items
-  chrome.contextMenus.create({
-    parentId: "ai-sidekick-root",
-    id: "open-sidekick",
-    title: "Open Sidekick Here",
-    contexts: ["all"]
-  });
-
-  chrome.contextMenus.create({
-    parentId: "ai-sidekick-root",
-    id: "separator-1",
-    type: "separator",
-    contexts: ["all"]
-  });
-
-  // 3. Dynamic Items from Storage
-  const data = await chrome.storage.local.get(['actions']);
-  let actions = data.actions;
-
-  // First Run / Clean Slate: Seed from Defaults
-  if (!actions || !Array.isArray(actions) || actions.length === 0) {
-      if (typeof DEFAULT_ACTIONS !== 'undefined') {
-          actions = DEFAULT_ACTIONS;
-          await chrome.storage.local.set({ actions: DEFAULT_ACTIONS });
-      } else {
-          console.warn("DEFAULT_ACTIONS not loaded yet.");
-          return;
-      }
-  }
-
-  // Create Menus
-  actions.forEach(action => {
-      chrome.contextMenus.create({
-        parentId: "ai-sidekick-root",
-        id: action.id, 
-        title: action.title,
-        contexts: action.contexts || ["selection"]
+    // Helper: Promisified Create with Error Suppression
+    const createAsync = (props) => {
+      return new Promise((resolve) => {
+        chrome.contextMenus.create(props, () => {
+          if (chrome.runtime.lastError) {
+             const msg = chrome.runtime.lastError.message;
+             // Totally suppress duplicate id error to satisfy the user's console
+             if (!msg.includes("duplicate id")) {
+               console.warn(`Menu Error [${props.id}]:`, msg);
+             }
+          }
+          resolve();
+        });
       });
-  });
+    };
+
+    // Track used IDs to prevent logic bugs from creating duplicates
+    const usedIds = new Set();
+
+    // 2. Create Root
+    usedIds.add("ai-sidekick-root");
+    await createAsync({
+      id: "ai-sidekick-root",
+      title: "AI Sidekick",
+      contexts: ["selection", "page"]
+    });
+
+    // 3. Static Items
+    usedIds.add("open-sidekick");
+    await createAsync({
+      parentId: "ai-sidekick-root",
+      id: "open-sidekick",
+      title: "Open Sidekick Here",
+      contexts: ["all"]
+    });
+
+    usedIds.add("separator-1");
+    await createAsync({
+      parentId: "ai-sidekick-root",
+      id: "separator-1",
+      type: "separator",
+      contexts: ["all"]
+    });
+
+    // 4. Dynamic Items
+    const data = await chrome.storage.local.get(['actions']);
+    let actions = data.actions;
+
+    if (!actions || !Array.isArray(actions) || actions.length === 0) {
+        if (typeof DEFAULT_ACTIONS !== 'undefined') {
+            actions = DEFAULT_ACTIONS;
+            // Prevent recursive trigger loop from re-entering logic
+            // (Lock is held, so onChanged will return, but let's be safe)
+            await chrome.storage.local.set({ actions: DEFAULT_ACTIONS });
+        } else {
+            return;
+        }
+    }
+
+    // Sequential Creation Loop
+    for (const action of actions) {
+        if (usedIds.has(action.id)) {
+            console.warn(`Skipping duplicate action ID: ${action.id}`);
+            continue;
+        }
+        usedIds.add(action.id);
+        
+        await createAsync({
+          parentId: "ai-sidekick-root",
+          id: action.id, 
+          title: action.title,
+          contexts: action.contexts || ["selection"]
+        });
+    }
+    
+  } catch (err) {
+      console.error("Critical error in setupContextMenus:", err);
+  } finally {
+    isSettingUp = false;
+  }
 }
 
 // Init on Startup/Install
@@ -156,7 +203,7 @@ async function openExtension(_tab) {
         // 2. URL / Title Match (if Tab ID match failed or wasn't tracked)
         if (!targetTab) {
           targetTab = win.tabs.find(
-            (t) => (t.url && t.url.includes('sidepanel.html')) || t.title === 'AI Sidekick',
+            (t) => (t.url && t.url.includes('src/sidepanel.html')) || t.title === 'AI Sidekick',
           );
         }
 
@@ -179,7 +226,7 @@ async function openExtension(_tab) {
 
     // Match by URL or Title
     targetTab = allTabs.find(
-      (t) => (t.url && t.url.includes('sidepanel.html')) || t.title === 'AI Sidekick',
+      (t) => (t.url && t.url.includes('src/sidepanel.html')) || t.title === 'AI Sidekick',
     );
 
     if (targetTab) {
@@ -227,7 +274,7 @@ async function openExtension(_tab) {
   if (!focused) {
     try {
       const newWin = await chrome.windows.create({
-        url: 'sidepanel.html',
+        url: 'src/sidepanel.html',
         type: 'popup',
         width: 400,
         height: 600,

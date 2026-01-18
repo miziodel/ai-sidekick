@@ -347,6 +347,13 @@ async function handleUserSend(overrideText = null, displayText = null) {
   // Create AI placeholder
   const aiMsgId = addMessage('ai', '...', true); // true = raw html/loading
 
+  // --- DEBUG LOGGING: Prompt & Context ---
+  console.groupCollapsed('%c 🚀 AI Sidekick: Chat Exchange ', 'background: #222; color: #bada55; font-weight: bold;');
+  console.log('%c > Source Prompt: ', 'color: #2196F3; font-weight: bold;', text);
+  console.log('%c > Full Context (Last 10): ', 'color: #9C27B0; font-weight: bold;', window.Logic.pruneHistory(state.chatHistory, 10));
+  console.groupEnd();
+  // ----------------------------------------
+
   try {
     const responseStream = await callLLMStream(model, text);
     const fullText = await consumeStream(responseStream, aiMsgId);
@@ -354,6 +361,10 @@ async function handleUserSend(overrideText = null, displayText = null) {
     // Save AI response
     state.chatHistory.push({ role: 'ai', text: fullText });
     saveHistory();
+
+    // --- DEBUG LOGGING: AI Response ---
+    console.log('%c < AI Response: ', 'color: #4CAF50; font-weight: bold;', fullText);
+    // -----------------------------------
   } catch (error) {
     updateMessage(aiMsgId, `**Error**: ${error.message}`);
   } finally {
