@@ -15,7 +15,10 @@
 - [x] **Conversation Persistence**: Chat history saved to `chrome.storage.local`.
 - [x] **Sliding Window**: Sends only the last **10 messages** to LLM to prevent context overflow.
 - [x] **Context Pruning Notification**: Persistent yellow toast warns when older messages are forgotten.
-- [x] **Context Strategy**: Configurable strategy (Auto, URL-only, Full-text) to optimize token usage.
+- [x] **Automatic Content Extraction**: Powered by Mozilla Readability.js. 
+    - Always active for all models.
+    - Preserves links in `Text [URL]` format.
+    - Automatic whitespace and noise cleaning.
 - [x] **Security Restriction Fallback**: Gracefully handles restricted `chrome://` pages by falling back to URL-only analysis.
 - [x] **Summarization**: Dedicated button to request a conversation summary.
 

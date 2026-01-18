@@ -13,7 +13,6 @@ const els = {
   geminiKey: document.getElementById('gemini-key'),
   deepseekKey: document.getElementById('deepseek-key'),
   systemInstruction: document.getElementById('system-instruction'),
-  contextStrategy: document.getElementById('context-strategy'),
   saveBtn: document.getElementById('save-btn'),
   status: document.getElementById('status'),
   btnLocal: document.getElementById('btn-device-storage'),
@@ -61,7 +60,6 @@ function restoreOptions() {
     ['geminiKey', 'deepseekKey', 'storageMode', 'systemInstruction', 'contextStrategy', 'actions'],
     (localData) => {
       // 1. General Settings
-      if (localData.contextStrategy) els.contextStrategy.value = localData.contextStrategy;
       if (localData.systemInstruction) els.systemInstruction.value = localData.systemInstruction;
 
       // 2. Actions (Storage First -> Default fallback)
@@ -167,7 +165,6 @@ async function saveOptions() {
   const geminiVal = els.geminiKey.value.trim();
   const deepseekVal = els.deepseekKey.value.trim();
   const instructionVal = els.systemInstruction.value.trim();
-  const contextStrategyVal = els.contextStrategy.value;
   const vaultPass = els.vaultPassword.value;
 
   // 1. Scrape Actions from DOM
@@ -198,7 +195,6 @@ async function saveOptions() {
     // Save to Storage
     await chrome.storage.local.set({ 
       systemInstruction: instructionVal,
-      contextStrategy: contextStrategyVal,
       storageMode: currentMode,
       actions: newActions // THIS TRIGGERS HOT-RELOAD IN BACKGROUND & SIDEPANEL
     });

@@ -17,6 +17,7 @@
 - Implemented `chrome.storage.session` for resilient window tracking in Arc.
 - Added UI Context Bar and "Open Sidekick Here" menu action.
 - Integrated ESLint into the build pipeline.
+- **Integrated Mozilla Readability.js for production-grade content extraction**.
 
 ## Active Questions
 - (Empty)

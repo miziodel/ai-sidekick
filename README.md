@@ -15,7 +15,6 @@ AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM 
 - **Secure Vault**: Client-side encryption (PBKDF2 + AES-GCM) for API keys.
   - **Session Persistence**: Keys stay unlocked for the browser session.
   - **Auto-Lock**: Automatically locks after 15 minutes of inactivity.
-- **Web Mode**: Fallback to `gemini.google.com` (free) if no API key is available.
 - **Contextual Actions**:
   - Right-click to Explain, Summarize, or Analyze pages.
   - **Summarize Button**: One-click summary of the current conversation.
@@ -85,6 +84,13 @@ node tests/run_tests.js
 
 You can customize the prompts used for context menu actions and page analysis in the **Options** page (`Right-click extension icon -> Options`).
 
+#### Automatic Content Extraction
+
+AI Sidekick uses **Mozilla Readability.js** to automatically extract the main content of the active page. This includes:
+- **Link Preservation**: Links are preserved in the text as `Text [URL]`.
+- **Whitespace Cleaning**: Noise and excessive whitespace are removed for a cleaner prompt.
+- **Smart Logic**: Boilerplate (menus, ads) is automatically filtered out.
+
 #### Available Variables
 
 Use these placeholders to insert dynamic content into your prompts:
@@ -92,7 +98,7 @@ Use these placeholders to insert dynamic content into your prompts:
 | Variable        | Description                                                        | Context             |
 | :-------------- | :----------------------------------------------------------------- | :------------------ |
 | `{{selection}}` | The text currently selected by the user.                           | Select Menu Actions |
-| `{{content}}`   | The full text content of the active page (truncated if necessary). | Analyze Page        |
+| `{{content}}`   | The full text content of the active page (including links).        | Analyze Page        |
 | `{{url}}`       | The URL of the active page.                                        | All Actions         |
 | `{{title}}`     | The title of the active page.                                      | All Actions         |
 

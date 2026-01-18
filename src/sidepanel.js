@@ -452,55 +452,80 @@ async function analyzeCurrentPage(overrideTabId = null, promptKey = 'summarize_p
   }
 
   // Deciding on Context Strategy
-  const settings = await chrome.storage.local.get(['contextStrategy']);
-  const strategy = settings.contextStrategy || 'auto';
-  const model = els.modelSelect.value;
-
+  // We now always extract content for best results.
+  // The template (e.g., {{content}}) decides whether to use it.
+  let needText = true;
   let finalText = null;
-  let finalUrl = tabUrl; // Use what we got from tab object
+  let finalUrl = tabUrl;
 
-  let needText = false;
+  try {
+    // 1. Inject Readability library
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['src/lib/Readability.js'],
+    });
 
-  // Strategy Logic
-  if (strategy === 'full-text') {
-    needText = true;
-  } else if (strategy === 'url-only') {
-    needText = false;
-  } else {
-    // Auto
-    if (model.includes('deepseek')) {
-      needText = false; // URL only
-    } else {
-      needText = true;
-    }
-  }
+    // 2. Execute extraction
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: () => {
+        // --- Helper: Link Preservation ---
+        // Append URLs to links so AI has context of where they point
+        document.querySelectorAll('a').forEach(a => {
+           if (a.href && a.href.startsWith('http') && a.innerText.trim()) {
+             const url = a.href;
+             // Only add if not already present in text
+             if (!a.innerText.includes(url)) {
+               a.innerText += ` [${url}]`;
+             }
+           }
+        });
 
-  // If we need text, try to extract it
-  if (needText) {
-    try {
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: () => {
+        // Clone document to avoid mutation (after we modified links in the live DOM... 
+        // actually better to clone first then modify clone to be safe, but Readability works on the passed doc)
+        const documentClone = document.cloneNode(true);
+        
+        let article = null;
+        try {
+          const reader = new Readability(documentClone);
+          article = reader.parse();
+        } catch (e) {
+          console.error('Readability parse failed:', e);
+        }
+
+        // --- Helper: Whitespace Cleaning ---
+        const cleanText = (str) => {
+          if (!str) return '';
+          return str
+            .replace(/\n\s*\n\s*\n+/g, '\n\n') // Collapse 3+ newlines to 2
+            .replace(/[ \t]+/g, ' ')           // Collapse multiple spaces/tabs
+            .trim();
+        };
+
+        if (article && article.textContent) {
           return {
-            text: document.body.innerText,
+            text: cleanText(article.textContent),
+            url: window.location.href,
+            title: article.title || document.title,
+          };
+        } else {
+          return {
+            text: cleanText(document.body.innerText),
             url: window.location.href,
             title: document.title,
           };
-        },
-      });
+        }
+      },
+    });
 
-      if (results && results[0] && results[0].result) {
-        finalText = results[0].result.text;
-        finalUrl = results[0].result.url; // Update with exact standard URL if valid
-      }
-    } catch (e) {
-      console.warn('Script injection failed (likely restricted page)', e);
-      addMessage('ai', `⚠️ Cannot read page content (Security Restriction). **Using URL only**.`);
-      // Fallback: finalText remains null, we just use the finalUrl we already have.
+    if (results && results[0] && results[0].result) {
+      finalText = results[0].result.text;
+      finalUrl = results[0].result.url;
     }
-  } else {
-    // We skipped extraction intentionally
-    console.log('Skipping text extraction based on strategy/model.');
+  } catch (e) {
+    console.warn('Extraction field failed', e);
+    // Fallback: use only URL if scripting is blocked
+    addMessage('ai', `⚠️ Limited access to this page. Using URL only.`);
   }
 
   // Pass chosen content with dynamic prompt

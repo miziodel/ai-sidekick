@@ -5,22 +5,29 @@ All notable changes to this project will be documented in this file.
 ## [1.0.2] - 2026-01-18
 
 ### Added
+- **Smart Content Extraction**: Integrated Mozilla's Readability.js library for production-grade article extraction (same algorithm as Firefox Reader View).
+- **Path Audit Integration**: `tests/audit_paths.js` now runs during `npm test` to verify asset integrity.
 - **Versioning Protocol**: Established strict version sync rules in `.agent/rules/02-versioning.md`.
 
 ### Changed
 - **Documentation**: Removed "draft" warnings from README; project promoted to Beta status.
 - **Audit**: Validated repository consistency and cleanup.
+- **Refined Content Extraction**: 
+    - Always-on strategy (removed Auto/URL-only toggle for simplicity).
+    - Preserves links in `Text [URL]` format using live DOM analysis.
+    - Improved whitespace cleaning and boilerplate removal.
+- Refactored `analyzeCurrentPage` in `sidepanel.js` to use Mozilla Readability.js.
+- **Static Analysis**: Added `tests/audit_paths.js` to prevent broken links during refactors.
+- **Side Panel Path**: Corrected `openExtension` logic to point to `src/sidepanel.html` after migration.
+- **Debug Logging**: Added stylized console logs in the Side Panel to monitor full chat exchanges (prompts, history context, responses).
+- **Multi-Model Support**: Integrated Gemini 1.5 Flash/Pro and DeepSeek V3/R1.
+- **Client-Side Encryption**: Implemented `CryptoUtils` class for PBKDF2 + AES-GCM local key storage.
 
 ## [1.0.1] - 2026-01-18
 
 ### Added
 - **Antigravity Structure**: Established `.agent/rules` and strict project identity.
 - **Source Reorganization**: Moved all extension code to `src/` for cleaner root.
-- **Static Analysis**: Added `tests/audit_paths.js` to prevent broken links during refactors.
-- **Side Panel Path**: Corrected `openExtension` logic to point to `src/sidepanel.html` after migration.
-- **Debug Logging**: Added stylized console logs in the Side Panel to monitor full chat exchanges (prompts, history context, responses).
-- **Multi-Model Support**: Integrated Gemini 1.5 Flash/Pro and DeepSeek V3/R1.
-- **Client-Side Encryption**: Implemented `CryptoUtils` class for PBKDF2 + AES-GCM local key storage.
 - **Arc Browser Support**:
     - **[Implemented]** **Single Instance Window**: Added logic to `background.js` using `chrome.storage.session` to track and focus the existing extension window, preventing duplicates.
     - **[Added]** **UI Context Bar**: Visual indicator of the active page URL being analyzed in the Side Panel/Popup.
