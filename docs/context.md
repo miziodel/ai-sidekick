@@ -9,6 +9,7 @@
 2.  Migrate Documentation to `docs/` (Done).
 3.  Implement robust Arc Browser Single-Instance logic (Done).
 4.  Standardize Source Code to `src/` (Done).
+5.  Implement and integrate path audit verification (`tests/audit_paths.js`) (Done).
 
 
 ## Recent Changes
@@ -18,4 +19,4 @@
 - Integrated ESLint into the build pipeline.
 
 ## Active Questions
-- Will the `src/` move break `manifest.json` paths? (Mitigation: `tests/audit_paths.js` planned).
+- (Empty)
