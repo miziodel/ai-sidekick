@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-01-18
+
+### Added
+- **Versioning Protocol**: Established strict version sync rules in `.agent/rules/02-versioning.md`.
+
+### Changed
+- **Documentation**: Removed "draft" warnings from README; project promoted to Beta status.
+- **Audit**: Validated repository consistency and cleanup.
+
 ## [1.0.1] - 2026-01-18
 
 ### Added

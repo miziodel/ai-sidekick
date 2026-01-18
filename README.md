@@ -1,10 +1,12 @@
 # AI Sidekick - Chrome Extension
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-draft-orange.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-v1.0.2-green.svg)
+
 
 AI Sidekick is a minimalist, "Arc-style" Chrome Extension that brings multi-LLM chat (Gemini & DeepSeek) and contextual analysis to your browser side panel.
 
-> ⚠️ **Note:** This project is currently in a **super draft** phase. Many features are still in the conceptual stage or only partially implemented.
+> 🟢 **Status:** v1.0.2 | **Beta** - Core features largely implemented and stable.
+
 
 ## 🎯 Key Features
 

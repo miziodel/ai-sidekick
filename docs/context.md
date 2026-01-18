@@ -1,13 +1,15 @@
 # Active Context
 
 ## Current Focus
-**Antigravity Migration**: We are restructuring the repository to align with the "Quality First" methodology and professional "Arc Expert" identity.
+**Maintenance & Polish**: Focus on stability, version consistency, and minor feature iterations.
+
 
 ### Current Goals
 1.  Establish `.agent/rules` (Done).
 2.  Migrate Documentation to `docs/` (Done).
 3.  Implement robust Arc Browser Single-Instance logic (Done).
-4.  Standardize Source Code to `src/` (In Progress).
+4.  Standardize Source Code to `src/` (Done).
+
 
 ## Recent Changes
 - Fixed Arc Toolbar Icon dimensions via `styles.css` CSS forcing (400x600px).
