@@ -31,9 +31,13 @@ verde mentre quel caso non gira. Il tag `v1.0.2` è uscito con il lint rosso, e 
 
 ## La misura che manca
 
-L'uso. Non c'è telemetria per scelta (`README.md:126`), non c'è un registro nel repo, e l'estensione non
-risulta installata nei profili browser leggibili. «La uso ogni giorno» resta una dichiarazione, e nella
-scheda sta scritta così.
+L'uso. Non c'è telemetria per scelta (`README.md:126`) e nessun registro nel repo. La dichiarazione del
+proprietario è però precisa: l'ha usata molto, ogni giorno, e ha smesso quando Brave ha messo la funzione
+nativa nel browser. Il numero che il registro chiedeva non esiste e non arriverà: l'estensione ha chiuso
+il suo ciclo perché il bisogno è stato assorbito dal browser, non perché abbia smesso di funzionare.
+
+Questo cambia il senso del caso: non è un prodotto da mantenere, è la prova che un bisogno personale si
+copre in poche ore con un LLM.
 
 ## La domanda del cliente (ipotetica)
 
